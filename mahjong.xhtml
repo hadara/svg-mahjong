@@ -1,0 +1,132 @@
+<?xml version='1.0'?>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg">
+<head>
+<script type='text/javascript'>
+<![CDATA[
+var svgdoc = null;
+var svgwin = null;
+
+function init() {
+  // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
+  var embed = document.getElementById('tileset');
+  try {
+    svgdoc = embed.getSVGDocument();
+  } catch(exception) {
+    alert('getSVGDocument interface not available. Try some other browser.');
+  }
+  
+  if (svgdoc && svgdoc.defaultView) {
+    svgwin = svgdoc.defaultView; 
+  }
+
+  // document.getElementById('tileset').getSVGDocument()
+  build_tileset();
+}
+
+function build_tileset() {
+  var gameboard = document.getElementById('hgameboard');
+  //var c3 = svgdoc.getElementById('rect2236'); // 'CHARACTER_1');
+  var tiles = new Array(
+        'CHARACTER_1', 
+        'CHARACTER_2', 
+        'CHARACTER_3', 
+        'CHARACTER_4', 
+        'CHARACTER_5',
+        'CHARACTER_6',
+        'CHARACTER_7',
+        'CHARACTER_8',
+        'CHARACTER_9',
+        'ROD_1',
+        'ROD_2',
+        'ROD_3',
+        'ROD_4',
+        'ROD_5',
+        'ROD_6',
+        'ROD_7',
+        'ROD_8',
+        'ROD_9',
+        'BAMBOO_1',
+        'BAMBOO_2',
+        'BAMBOO_3',
+        'BAMBOO_4',
+        'BAMBOO_5',
+        'BAMBOO_6',
+        'BAMBOO_7',
+        'BAMBOO_8',
+        'BAMBOO_9',
+        'SEASON_1',
+        'SEASON_2',
+        'SEASON_3',
+        'SEASON_4',
+        'DRAGON_1',
+        'DRAGON_2',
+        'DRAGON_3',
+        'FLOWER_1',
+        'FLOWER_2',
+        'FLOWER_3',
+        'FLOWER_4',
+        'WIND_1',
+        'WIND_2',
+        'WIND_3',
+        'WIND_4'
+    );
+
+  var background = svgdoc.getElementById('rect_back').cloneNode(true);
+  // rect_selected
+  var x = 0;
+  var y = 0;
+  var ytrans = -556;
+
+  for (var i=1; i<=tiles.length; i++) {
+      var c3 = svgdoc.getElementById(tiles[i-1]);
+      //c3.setAttribute('fill', 'black');
+      // FIXME: find out tile width dynamically
+      //var xpos = 100; //+(20*i);
+      //c3.setAttribute('cx', xpos);
+      //c3.setAttribute('transform', 'translate('+xpos+')');
+      var p1 = c3.cloneNode(true);
+      p1.setAttribute('transform', 'translate(0, '+ytrans+')');
+      //p1.setAttribute('x', 70*x);
+      //p1.setAttribute('y', 100*y);
+
+      var p2 = c3.cloneNode(true);
+      p1.onclick = function () { alert('tere'); };
+      //p2.onclick = function () { alert('tere'); };
+      gameboard.appendChild(p1);
+      //gameboard.appendChild(p2);
+
+      var newbg = background.cloneNode(true);
+      newbg.setAttribute('x', 68*x);
+      newbg.setAttribute('y', 100*y);
+      newbg.onclick = function () { alert('bgclick'); };
+      gameboard.appendChild(newbg);
+
+      if (i != 0 && (i % 9) == 0) {
+        y += 1;
+        //ytrans += 50;
+        x = 0;
+      } else {
+        x += 1;
+      }
+
+      //var xpos = 100*(10+i);
+      //circle.setAttribute('cx', xpos);
+      //circle.setAttribute('cy', '100');
+      //circle.setAttribute('r', '30');
+      //circle.setAttribute('fill', 'green');
+  }
+
+//gameboard.appendChild(circle);
+}
+]]>
+</script>
+</head>
+<body onload="javascript:init();">
+<embed id="tileset" src="classic.svg" width="0" height="0" type="image/svg+xml"></embed>
+
+<!-- viewBox="0 0 100 100"  -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1200 1200" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard"> 
+</svg>
+
+</body>
+</html>
