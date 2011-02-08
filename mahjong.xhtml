@@ -6,27 +6,10 @@
 var svgdoc = null;
 var svgwin = null;
 
-function init() {
-  // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
-  var embed = document.getElementById('tileset');
-  try {
-    svgdoc = embed.getSVGDocument();
-  } catch(exception) {
-    alert('getSVGDocument interface not available. Try some other browser.');
-  }
-  
-  if (svgdoc && svgdoc.defaultView) {
-    svgwin = svgdoc.defaultView; 
-  }
+function Board() {
+};
 
-  // document.getElementById('tileset').getSVGDocument()
-  build_tileset();
-}
-
-function build_tileset() {
-  var gameboard = document.getElementById('hgameboard');
-  //var c3 = svgdoc.getElementById('rect2236'); // 'CHARACTER_1');
-  var tiles = new Array(
+Board.prototype.tiles = new Array(
         'CHARACTER_1', 
         'CHARACTER_2', 
         'CHARACTER_3', 
@@ -71,53 +54,76 @@ function build_tileset() {
         'WIND_4'
     );
 
-  var background = svgdoc.getElementById('rect_back').cloneNode(true);
-  // rect_selected
-  var x = 0;
-  var y = 0;
-  var ytrans = -556;
+Board.prototype.board = null;
 
-  for (var i=1; i<=tiles.length; i++) {
-      var c3 = svgdoc.getElementById(tiles[i-1]);
-      //c3.setAttribute('fill', 'black');
-      // FIXME: find out tile width dynamically
-      //var xpos = 100; //+(20*i);
-      //c3.setAttribute('cx', xpos);
-      //c3.setAttribute('transform', 'translate('+xpos+')');
-      var p1 = c3.cloneNode(true);
-      p1.setAttribute('transform', 'translate(0, '+ytrans+')');
-      //p1.setAttribute('x', 70*x);
-      //p1.setAttribute('y', 100*y);
+Board.prototype.init = function() {
+    var i, tlen;
+    var x=0, y=0;
 
-      var p2 = c3.cloneNode(true);
-      p1.onclick = function () { alert('tere'); };
-      //p2.onclick = function () { alert('tere'); };
-      gameboard.appendChild(p1);
-      //gameboard.appendChild(p2);
+    this.board = document.getElementById('hgameboard');
 
-      var newbg = background.cloneNode(true);
-      newbg.setAttribute('x', 68*x);
-      newbg.setAttribute('y', 100*y);
-      newbg.onclick = function () { alert('bgclick'); };
-      gameboard.appendChild(newbg);
+    for (i=1, tlen=this.tiles.length; i<=tlen; i++) {
+        this.get_tile(this.tiles[i-1]);
+        //var c3 = svgdoc.getElementById(tiles[i-1]);
+        //c3.setAttribute('fill', 'black');
+        // FIXME: find out tile width dynamically
+        //var xpos = 100; //+(20*i);
+        //c3.setAttribute('cx', xpos);
+        //c3.setAttribute('transform', 'translate('+xpos+')');
+        //var p1 = c3.cloneNode(true);
+        //p1.setAttribute('transform', 'translate(0, -556)');
+  
+        //var newbg = background.cloneNode(true);
+        //newbg.setAttribute('x', 68*x);
+        //newbg.setAttribute('y', 100*y);
+        //newbg.onclick = function () { alert('bgclick'); };
+  
+        if (i != 0 && (i % 9) == 0) {
+          y += 1;
+          //ytrans += 50;
+          x = 0;
+        } else {
+          x += 1;
+        }
+    }
+}
 
-      if (i != 0 && (i % 9) == 0) {
-        y += 1;
-        //ytrans += 50;
-        x = 0;
-      } else {
-        x += 1;
-      }
+Board.prototype.get_tile = function (tile_name) {
+    var origtile = svgdoc.getElementById(tile_name);
+    var t1 = origtile.cloneNode(true);
+    t1.setAttribute('transform', 'translate(0, -556)');
 
-      //var xpos = 100*(10+i);
-      //circle.setAttribute('cx', xpos);
-      //circle.setAttribute('cy', '100');
-      //circle.setAttribute('r', '30');
-      //circle.setAttribute('fill', 'green');
+    var background = svgdoc.getElementById('rect_back').cloneNode(true);
+    var selected = svgdoc.getElementById('rect_selected').cloneNode(true);
+
+    var newbg = background.cloneNode(true);
+    //newbg.setAttribute('x', 68*x);
+    //newbg.setAttribute('y', 100*y);
+    newbg.onclick = function () { alert('bgclick'); };
+
+    t1.appendChild(newbg);
+    this.board.appendChild(t1);
+
+    return t1;
+}
+
+function init() {
+  // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
+  var embed = document.getElementById('tileset');
+  try {
+    svgdoc = embed.getSVGDocument();
+  } catch(exception) {
+    alert('getSVGDocument interface not available. Try some other browser.');
+  }
+  
+  if (svgdoc && svgdoc.defaultView) {
+    svgwin = svgdoc.defaultView; 
   }
 
-//gameboard.appendChild(circle);
+  b = new Board();
+  b.init();
 }
+
 ]]>
 </script>
 </head>
