@@ -3,6 +3,9 @@
 <head>
 <script type='text/javascript'>
 <![CDATA[
+
+var SVGNS = "http://www.w3.org/2000/svg";
+
 var svgdoc = null;
 var svgwin = null;
 
@@ -10,6 +13,17 @@ var global_id = 0;
 
 function Board() {
 };
+
+Board.prototype.defs = new Array(
+    'TILE_1',
+    'TILE_1_SEL',
+    'TILE_2',
+    'TILE_2_SEL',
+    'TILE_3',
+    'TILE_3_SEL',
+    'TILE_4',
+    'TILE_4_SEL'
+);
 
 Board.prototype.tiles = new Array(
         'CHARACTER_1', 
@@ -64,8 +78,22 @@ Board.prototype.init = function() {
 
     this.board = document.getElementById('hgameboard');
 
-    for (i=1, tlen=this.tiles.length; i<=tlen; i++) {
-        this.get_tile(this.tiles[i-1]);
+    for (i=1, tlen=this.tiles.length; i<=tlen && i<12; i++) {
+        var new_x = (i*20)-500;
+        var new_y = (i*100)-500;
+        var e = this.get_tile(this.tiles[i-1]);
+        e.setAttribute('transform', 'translate('+new_x+', '+new_y+')');
+        var u = this.create_use();
+        u.setAttribute('transform', 'translate('+new_x+', '+new_y+')');
+        this.board.appendChild(u);
+        //e.appendChild(this.create_use());
+        /*
+        if (i==1) {
+            var bg = this.get_bg();
+            bg.setAttribute('transform', 'translate('+new_x+', '+new_y+')');
+            this.board.appendChild(bg);
+        }
+        */
         //var c3 = svgdoc.getElementById(tiles[i-1]);
         //c3.setAttribute('fill', 'black');
         // FIXME: find out tile width dynamically
@@ -88,6 +116,28 @@ Board.prototype.init = function() {
           x += 1;
         }
     }
+    this.copy_defs();
+}
+
+Board.prototype.get_def = function () {
+    return d;
+}
+
+Board.prototype.create_use = function () {
+    use = document.createElementNS(SVGNS, "use");
+    use.setAttribute("xlink:href", '#TILE_2');
+    use.setAttribute("x", 0);
+    use.setAttribute("y", 0);
+    return use;
+}
+
+Board.prototype.copy_defs = function () {
+    // create def
+    var def_sect = document.getElementById('bg_elems');
+    for (var i=0; i<this.defs.length; i++) {
+        var d = svgdoc.getElementById(this.defs[i]);
+        def_sect.appendChild(d);
+    }
 }
 
 Board.prototype.get_tile = function (tile_name) {
@@ -97,28 +147,33 @@ Board.prototype.get_tile = function (tile_name) {
 
     //var background = svgdoc.getElementById('rect_back').cloneNode(true);
     //var selected = svgdoc.getElementById('rect_selected').cloneNode(true);
-    var background = svgdoc.getElementById('TILE_2').cloneNode(true);
-    var selected = svgdoc.getElementById('TILE_2_SEL').cloneNode(true);
+    //var background = svgdoc.getElementById('TILE_2').cloneNode(true);
+    //var selected = svgdoc.getElementById('TILE_2_SEL').cloneNode(true);
 
-    var newbg = background.cloneNode(true);
-    newbg.setAttribute('id', 'gg'+global_id);
-    newbg.setAttribute('x', 0);
-    newbg.setAttribute('y', 0);
+    //var newbg = background.cloneNode(true);
+    //newbg.setAttribute('id', 'gg'+global_id);
+    //newbg.setAttribute('x', 0);
+    //newbg.setAttribute('y', 0);
 
     global_id += 1;
     //newbg.setAttribute('x', 68*x);
     //newbg.setAttribute('y', 100*y);
-    newbg.onclick = function () { alert('bgclick'); };
+    //newbg.onclick = function () { alert('bgclick'); };
 
     t1.onclick = function () { alert('tile click'); };
 
-    if (global_id == 1) {
-        t1.appendChild(newbg);
-    }
+    //if (global_id == 1) {
+    //    t1.appendChild(newbg);
+    //}
     //t1.lastElementChild.appendChild(newbg);
     this.board.appendChild(t1);
 
     return t1;
+}
+
+Board.prototype.get_bg = function () {
+    var background = svgdoc.getElementById('TILE_2').cloneNode(true);
+    return background;
 }
 
 function init() {
@@ -142,10 +197,12 @@ function init() {
 </script>
 </head>
 <body onload="javascript:init();">
+
 <embed id="tileset" src="traditional.svg" width="0" height="0" type="image/svg+xml"></embed>
 
 <!-- viewBox="0 0 100 100"  -->
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1200 1200" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard"> 
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1200 1200" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard">
+  <defs id="bg_elems"></defs>
 </svg>
 
 </body>
