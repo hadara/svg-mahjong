@@ -6,6 +6,8 @@
 var svgdoc = null;
 var svgwin = null;
 
+var global_id = 0;
+
 function Board() {
 };
 
@@ -91,17 +93,29 @@ Board.prototype.init = function() {
 Board.prototype.get_tile = function (tile_name) {
     var origtile = svgdoc.getElementById(tile_name);
     var t1 = origtile.cloneNode(true);
-    t1.setAttribute('transform', 'translate(0, -556)');
+    //t1.setAttribute('transform', 'translate(0, -556)');
 
-    var background = svgdoc.getElementById('rect_back').cloneNode(true);
-    var selected = svgdoc.getElementById('rect_selected').cloneNode(true);
+    //var background = svgdoc.getElementById('rect_back').cloneNode(true);
+    //var selected = svgdoc.getElementById('rect_selected').cloneNode(true);
+    var background = svgdoc.getElementById('TILE_2').cloneNode(true);
+    var selected = svgdoc.getElementById('TILE_2_SEL').cloneNode(true);
 
     var newbg = background.cloneNode(true);
+    newbg.setAttribute('id', 'gg'+global_id);
+    newbg.setAttribute('x', 0);
+    newbg.setAttribute('y', 0);
+
+    global_id += 1;
     //newbg.setAttribute('x', 68*x);
     //newbg.setAttribute('y', 100*y);
     newbg.onclick = function () { alert('bgclick'); };
 
-    t1.appendChild(newbg);
+    t1.onclick = function () { alert('tile click'); };
+
+    if (global_id == 1) {
+        t1.appendChild(newbg);
+    }
+    //t1.lastElementChild.appendChild(newbg);
     this.board.appendChild(t1);
 
     return t1;
@@ -128,7 +142,7 @@ function init() {
 </script>
 </head>
 <body onload="javascript:init();">
-<embed id="tileset" src="classic.svg" width="0" height="0" type="image/svg+xml"></embed>
+<embed id="tileset" src="traditional.svg" width="0" height="0" type="image/svg+xml"></embed>
 
 <!-- viewBox="0 0 100 100"  -->
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1200 1200" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard"> 
