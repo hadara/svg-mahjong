@@ -11,6 +11,27 @@ var svgwin = null;
 
 var global_id = 0;
 
+function Tile(name) {
+    this.name = name;
+    this.id = global_id++;
+    this.create_dom_elem();
+}
+
+Tile.prototype.dom_ref = null;
+Tile.prototype.name = null;
+
+Tile.prototype.create_dom_elem = function() {
+    console.log('create elem '+this.name);
+    var u = document.createElementNS(SVGNS, "use");
+    var t = svgdoc.getElementById(this.name);
+    var bb = t.getBBox();
+    u.setAttribute('x', -bb.x);
+    u.setAttribute('y', -bb.y);
+    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", 'traditional.svg#'+this.name);
+    this.dom_ref = u;
+    return u;
+}
+
 function Board() {
 };
 
@@ -70,12 +91,18 @@ Board.prototype.tiles = new Array(
         'WIND_4'
     );
 
-Board.prototype.board = null;
+Board.prototype.dom_board = null;
+Board.prototype.board = Array();
 
 Board.prototype.tile_height = 89;
 Board.prototype.tile_width = 69;
 
+Board.prototype.height = 8;
+Board.prototype.width = 18;
+
 Board.prototype.get_tile_by_name = function(name) {
+    return new Tile(name);
+
     var u = this.create_use();
     var t = svgdoc.getElementById(name);
     var bb = t.getBBox();
@@ -86,28 +113,66 @@ Board.prototype.get_tile_by_name = function(name) {
 }
 
 Board.prototype.get_tile_pair = function(tile_name) {
-    return Array(get_tile_by_name(tile_name), get_tile_by_name(tile_name));
+    return Array(this.get_tile_by_name(tile_name), this.get_tile_by_name(tile_name));
+}
+
+Board.prototype.get_random_tile_name = function() {
+    var randpos = Math.floor(Math.random()*this.tiles.length);
+    console.log(randpos);
+    return this.tiles[randpos];
+}
+
+Board.prototype.positon_is_free = function() {
+    return true;
+}
+
+Board.prototype.get_random_free_position = function() {
+    while (1) {
+        var rand_x = Math.floor(Math.random()*this.width);
+        var rand_y = Math.floor(Math.random()*this.height);
+        console.log(rand_x+' '+rand_y);
+        // XXX: do it more intelligently
+        if (this.board[rand_y][rand_x] === null) {
+            return Array(rand_x, rand_y);
+        }
+    }
+}
+
+Board.prototype.translate_to_position = function(elem, x, y) {
+    console.log('translate:'+x+' '+y);
+    elem.setAttribute('transform', 'translate('+x+', '+y+')');
+}
+
+Board.prototype.position_tile = function(t) {
+    var coords = this.get_random_free_position();
+    this.board[coords[1]][coords[0]] = t;
+    this.translate_to_position(t.dom_ref, coords[0]*this.tile_width, coords[1]*this.tile_height);
+    this.dom_board.appendChild(t.dom_ref);
 }
 
 Board.prototype.init = function() {
     var i, tlen;
     var x=0, y=0;
 
-    this.board = document.getElementById('hgameboard');
-
-    for (i=1, tlen=this.tiles.length; i<=tlen; i++) {
-        var new_x = x*this.tile_width;
-        var new_y = y*this.tile_height;
-        var t = this.get_tile_by_name(this.tiles[i-1]);
-        t.setAttribute('transform', 'translate('+new_x+','+new_y+')');
-        this.board.appendChild(t);
-  
-        if (i != 0 && (i % 9) == 0) {
-          y += 1;
-          x = 0;
-        } else {
-          x += 1;
+    for (var i=0; i<this.height; i++) {
+        var tmp_ar = Array();
+        for (var j=0; j<this.width; j++) {
+            tmp_ar.push(null);
         }
+        this.board.push(tmp_ar);
+    }
+    this.empty_positions = this.height * this.width;
+
+    this.dom_board = document.getElementById('hgameboard');
+    var element_pairs = (this.height*this.width)/2;
+    for (i=0; i<element_pairs; i++) {
+        var rtile = this.get_random_tile_name();
+        console.log('random tile '+rtile);
+        var tp = this.get_tile_pair(rtile);
+        console.log('positioning '+tp);
+        this.position_tile(tp[0]);
+        this.position_tile(tp[1]);
+        console.log('positioning done');
     }
 }
 
@@ -117,19 +182,7 @@ Board.prototype.get_def = function () {
 
 Board.prototype.create_use = function () {
     use = document.createElementNS(SVGNS, "use");
-    //use.setAttribute("xlink:href", '#TILE_2');
-    //use.setAttribute("x", 0);
-    //use.setAttribute("y", 0);
     return use;
-}
-
-Board.prototype.copy_defs = function () {
-    // create def
-    var def_sect = document.getElementById('bg_elems');
-    for (var i=0; i<this.defs.length; i++) {
-        var d = svgdoc.getElementById(this.defs[i]);
-        def_sect.appendChild(d);
-    }
 }
 
 Board.prototype.get_bg = function () {
@@ -162,9 +215,8 @@ function init() {
 <embed id="tileset" src="traditional.svg" width="0" height="0" type="image/svg+xml"></embed>
 
 <!-- viewBox="0 0 100 100"  -->
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1200 1200" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 800 800" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard">
   <defs id="bg_elems"></defs>
-  <svg:use xlink:href="#CHARACTER_1" x="100" y="100" />
 </svg>
 
 </body>
