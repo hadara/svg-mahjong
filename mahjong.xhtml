@@ -1,5 +1,5 @@
 <?xml version='1.0'?>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg"  xmlns:xlink="http://www.w3.org/1999/xlink">
 <head>
 <script type='text/javascript'>
 <![CDATA[
@@ -72,51 +72,43 @@ Board.prototype.tiles = new Array(
 
 Board.prototype.board = null;
 
+Board.prototype.tile_height = 89;
+Board.prototype.tile_width = 69;
+
+Board.prototype.get_tile_by_name = function(name) {
+    var u = this.create_use();
+    var t = svgdoc.getElementById(name);
+    var bb = t.getBBox();
+    u.setAttribute('x', -bb.x);
+    u.setAttribute('y', -bb.y);
+    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", 'traditional.svg#'+name);
+    return u;
+}
+
+Board.prototype.get_tile_pair = function(tile_name) {
+    return Array(get_tile_by_name(tile_name), get_tile_by_name(tile_name));
+}
+
 Board.prototype.init = function() {
     var i, tlen;
     var x=0, y=0;
 
     this.board = document.getElementById('hgameboard');
 
-    for (i=1, tlen=this.tiles.length; i<=tlen && i<12; i++) {
-        var new_x = (i*20)-500;
-        var new_y = (i*100)-500;
-        var e = this.get_tile(this.tiles[i-1]);
-        e.setAttribute('transform', 'translate('+new_x+', '+new_y+')');
-        var u = this.create_use();
-        u.setAttribute('transform', 'translate('+new_x+', '+new_y+')');
-        this.board.appendChild(u);
-        //e.appendChild(this.create_use());
-        /*
-        if (i==1) {
-            var bg = this.get_bg();
-            bg.setAttribute('transform', 'translate('+new_x+', '+new_y+')');
-            this.board.appendChild(bg);
-        }
-        */
-        //var c3 = svgdoc.getElementById(tiles[i-1]);
-        //c3.setAttribute('fill', 'black');
-        // FIXME: find out tile width dynamically
-        //var xpos = 100; //+(20*i);
-        //c3.setAttribute('cx', xpos);
-        //c3.setAttribute('transform', 'translate('+xpos+')');
-        //var p1 = c3.cloneNode(true);
-        //p1.setAttribute('transform', 'translate(0, -556)');
-  
-        //var newbg = background.cloneNode(true);
-        //newbg.setAttribute('x', 68*x);
-        //newbg.setAttribute('y', 100*y);
-        //newbg.onclick = function () { alert('bgclick'); };
+    for (i=1, tlen=this.tiles.length; i<=tlen; i++) {
+        var new_x = x*this.tile_width;
+        var new_y = y*this.tile_height;
+        var t = this.get_tile_by_name(this.tiles[i-1]);
+        t.setAttribute('transform', 'translate('+new_x+','+new_y+')');
+        this.board.appendChild(t);
   
         if (i != 0 && (i % 9) == 0) {
           y += 1;
-          //ytrans += 50;
           x = 0;
         } else {
           x += 1;
         }
     }
-    this.copy_defs();
 }
 
 Board.prototype.get_def = function () {
@@ -125,9 +117,9 @@ Board.prototype.get_def = function () {
 
 Board.prototype.create_use = function () {
     use = document.createElementNS(SVGNS, "use");
-    use.setAttribute("xlink:href", '#TILE_2');
-    use.setAttribute("x", 0);
-    use.setAttribute("y", 0);
+    //use.setAttribute("xlink:href", '#TILE_2');
+    //use.setAttribute("x", 0);
+    //use.setAttribute("y", 0);
     return use;
 }
 
@@ -138,37 +130,6 @@ Board.prototype.copy_defs = function () {
         var d = svgdoc.getElementById(this.defs[i]);
         def_sect.appendChild(d);
     }
-}
-
-Board.prototype.get_tile = function (tile_name) {
-    var origtile = svgdoc.getElementById(tile_name);
-    var t1 = origtile.cloneNode(true);
-    //t1.setAttribute('transform', 'translate(0, -556)');
-
-    //var background = svgdoc.getElementById('rect_back').cloneNode(true);
-    //var selected = svgdoc.getElementById('rect_selected').cloneNode(true);
-    //var background = svgdoc.getElementById('TILE_2').cloneNode(true);
-    //var selected = svgdoc.getElementById('TILE_2_SEL').cloneNode(true);
-
-    //var newbg = background.cloneNode(true);
-    //newbg.setAttribute('id', 'gg'+global_id);
-    //newbg.setAttribute('x', 0);
-    //newbg.setAttribute('y', 0);
-
-    global_id += 1;
-    //newbg.setAttribute('x', 68*x);
-    //newbg.setAttribute('y', 100*y);
-    //newbg.onclick = function () { alert('bgclick'); };
-
-    t1.onclick = function () { alert('tile click'); };
-
-    //if (global_id == 1) {
-    //    t1.appendChild(newbg);
-    //}
-    //t1.lastElementChild.appendChild(newbg);
-    this.board.appendChild(t1);
-
-    return t1;
 }
 
 Board.prototype.get_bg = function () {
@@ -203,6 +164,7 @@ function init() {
 <!-- viewBox="0 0 100 100"  -->
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1200 1200" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard">
   <defs id="bg_elems"></defs>
+  <svg:use xlink:href="#CHARACTER_1" x="100" y="100" />
 </svg>
 
 </body>
