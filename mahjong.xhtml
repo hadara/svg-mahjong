@@ -19,17 +19,43 @@ function Tile(name) {
 
 Tile.prototype.dom_ref = null;
 Tile.prototype.name = null;
+Tile.prototype.height = 89;
+Tile.prototype.width = 69;
+
+Tile.prototype.create_shadow = function() {
+    /* creates full transparent rect that is as wide as the tile so we have
+     * something that covers 100% of the area and will be able to catch 
+     * all the clicks because of that
+     */
+    r = document.createElementNS(SVGNS, "rect");
+    r.setAttribute("x", 0);
+    r.setAttribute("y", 0);
+    r.setAttribute("height", this.height);
+    r.setAttribute("width", this.width);
+    r.setAttribute("opacity", "0");
+    return r;
+}
+
+Tile.prototype.create_g = function() {
+    g = document.createElementNS(SVGNS, "g");
+    return g;
+}
 
 Tile.prototype.create_dom_elem = function() {
     console.log('create elem '+this.name);
+    var g = this.create_g();
+    var s = this.create_shadow();
     var u = document.createElementNS(SVGNS, "use");
     var t = svgdoc.getElementById(this.name);
     var bb = t.getBBox();
     u.setAttribute('x', -bb.x);
     u.setAttribute('y', -bb.y);
     u.setAttributeNS("http://www.w3.org/1999/xlink", "href", 'traditional.svg#'+this.name);
-    this.dom_ref = u;
-    return u;
+    g.appendChild(s);
+    g.appendChild(u);
+    g.onclick = function () { b.tile_selected(this); };
+    this.dom_ref = g;
+    return g;
 }
 
 function Board() {
@@ -94,22 +120,23 @@ Board.prototype.tiles = new Array(
 Board.prototype.dom_board = null;
 Board.prototype.board = Array();
 
-Board.prototype.tile_height = 89;
-Board.prototype.tile_width = 69;
-
 Board.prototype.height = 8;
 Board.prototype.width = 18;
 
 Board.prototype.get_tile_by_name = function(name) {
     return new Tile(name);
 
+    var g = this.create_g();
+    var s = this.create_shadow();
     var u = this.create_use();
     var t = svgdoc.getElementById(name);
     var bb = t.getBBox();
     u.setAttribute('x', -bb.x);
     u.setAttribute('y', -bb.y);
     u.setAttributeNS("http://www.w3.org/1999/xlink", "href", 'traditional.svg#'+name);
-    return u;
+    g.appendChild(s);
+    g.appendChild(u);
+    return g;
 }
 
 Board.prototype.get_tile_pair = function(tile_name) {
@@ -146,7 +173,7 @@ Board.prototype.translate_to_position = function(elem, x, y) {
 Board.prototype.position_tile = function(t) {
     var coords = this.get_random_free_position();
     this.board[coords[1]][coords[0]] = t;
-    this.translate_to_position(t.dom_ref, coords[0]*this.tile_width, coords[1]*this.tile_height);
+    this.translate_to_position(t.dom_ref, coords[0]*t.width, coords[1]*t.height);
     this.dom_board.appendChild(t.dom_ref);
 }
 
@@ -174,6 +201,10 @@ Board.prototype.init = function() {
         this.position_tile(tp[1]);
         console.log('positioning done');
     }
+}
+
+Board.prototype.tile_selected = function (tile) {
+    alert('click on element:'+tile);
 }
 
 Board.prototype.get_def = function () {
@@ -216,7 +247,9 @@ function init() {
 
 <!-- viewBox="0 0 100 100"  -->
 <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 800 800" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard">
-  <defs id="bg_elems"></defs>
+  <defs id="bg_elems">
+    <rect fill="yellow" opacity="0" x="400" y="400" height="100" width="100" />
+  </defs>
 </svg>
 
 </body>
