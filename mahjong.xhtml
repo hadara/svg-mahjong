@@ -18,11 +18,12 @@ function Tile(name) {
 }
 
 Tile.prototype.dom_ref = null;
+Tile.prototype.bg = null;
 Tile.prototype.name = null;
 Tile.prototype.height = 89;
 Tile.prototype.width = 69;
 
-Tile.prototype.create_shadow = function() {
+Tile.prototype.create_background = function() {
     /* creates full transparent rect that is as wide as the tile so we have
      * something that covers 100% of the area and will be able to catch 
      * all the clicks because of that
@@ -32,6 +33,7 @@ Tile.prototype.create_shadow = function() {
     r.setAttribute("y", 0);
     r.setAttribute("height", this.height);
     r.setAttribute("width", this.width);
+    r.setAttribute("fill", "yellow");
     r.setAttribute("opacity", "0");
     return r;
 }
@@ -44,18 +46,29 @@ Tile.prototype.create_g = function() {
 Tile.prototype.create_dom_elem = function() {
     console.log('create elem '+this.name);
     var g = this.create_g();
-    var s = this.create_shadow();
+    var bg = this.create_background();
+    this.bg = bg;
+
     var u = document.createElementNS(SVGNS, "use");
     var t = svgdoc.getElementById(this.name);
     var bb = t.getBBox();
     u.setAttribute('x', -bb.x);
     u.setAttribute('y', -bb.y);
     u.setAttributeNS("http://www.w3.org/1999/xlink", "href", 'traditional.svg#'+this.name);
-    g.appendChild(s);
+    g.appendChild(bg);
     g.appendChild(u);
-    g.onclick = function () { b.tile_selected(this); };
+    var self = this;
+    g.onclick = function () { b.tile_selected(self); };
     this.dom_ref = g;
     return g;
+}
+
+Tile.prototype.highlight = function() {
+    this.bg.setAttribute('opacity', 0.4);
+}
+
+Tile.prototype.unhighligh = function() {
+    this.bg.setAttribute('opacity', 0);
 }
 
 function Board() {
@@ -204,7 +217,7 @@ Board.prototype.init = function() {
 }
 
 Board.prototype.tile_selected = function (tile) {
-    alert('click on element:'+tile);
+    tile.highlight();
 }
 
 Board.prototype.get_def = function () {
