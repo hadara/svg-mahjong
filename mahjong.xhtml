@@ -22,6 +22,13 @@ Tile.prototype.bg = null;
 Tile.prototype.name = null;
 Tile.prototype.height = 89;
 Tile.prototype.width = 69;
+Tile.prototype.x = null;
+Tile.prototype.y = null;
+
+Tile.prototype.set_board_pos = function(self, x, y) {
+    self.x = x;
+    self.y = y;
+}
 
 Tile.prototype.create_background = function() {
     /* creates full transparent rect that is as wide as the tile so we have
@@ -190,6 +197,7 @@ Board.prototype.position_tile = function(t) {
     this.board[coords[1]][coords[0]] = t;
     this.translate_to_position(t.dom_ref, coords[0]*t.width, coords[1]*t.height);
     this.dom_board.appendChild(t.dom_ref);
+    t.set_board_pos(t, coords[0], coords[1]);
 }
 
 Board.prototype.init = function() {
@@ -222,6 +230,30 @@ Board.prototype.remove_element_from_board = function (e) {
     b.translate_to_position(e, -200, -200);
 }
 
+Board.prototype.is_ok_to_pair = function (e1, e2) {
+    if (e1.name !== e2.name) {
+        return false;
+    }
+
+    /*   [x-1, y-1] [x, y-1] [x+1, y-1]
+     *   [x-1, y] e1 [x+1, y]
+     *   [x-1, y+1] [x, y+1] [x+1, y+1]
+     */
+    // are they adjacent?
+    if (((e2.x+1) === e1.x && e2.y+1 === e1.y) ||
+        (e2.x === e1.x && e2.y+1 === e1.y) ||
+        (e2.x-1 === e1.x && e2.y+1 === e1.y) ||
+        (e2.x+1 === e1.x && e2.y === e1.y) ||
+        (e2.x-1 === e1.x && e2.y === e1.y) ||
+        (e2.x+1 === e1.x && e2.y-1 === e1.y) ||
+        (e2.x === e1.x && e2.y-1 === e1.y) ||
+        (e2.x-1 === e1.x && e2.y-1 === e1.y)) {
+        return true;
+    }
+    console.log("not ok to pair "+e1.x+" "+e1.y+" "+e2.x+" "+e2.y);
+    return false;
+}
+
 Board.prototype.tile_selected = function (tile) {
     if (tile === b.previous_selection) {
         tile.unhighligh();
@@ -230,7 +262,7 @@ Board.prototype.tile_selected = function (tile) {
 
     if (b.previous_selection !== null) {
         /* we already have a tile selected */
-        if (tile.name === b.previous_selection.name) {
+        if (tile.name === b.previous_selection.name && b.is_ok_to_pair(tile, b.previous_selection)) {
             /* same tile type */
             b.remove_element_from_board(tile.dom_ref);
             b.remove_element_from_board(b.previous_selection.dom_ref);
