@@ -133,6 +133,8 @@ Board.prototype.tiles = new Array(
 Board.prototype.dom_board = null;
 Board.prototype.board = Array();
 
+Board.prototype.previous_selection = null;
+
 Board.prototype.height = 8;
 Board.prototype.width = 18;
 
@@ -216,8 +218,32 @@ Board.prototype.init = function() {
     }
 }
 
+Board.prototype.remove_element_from_board = function (e) {
+    b.translate_to_position(e, -200, -200);
+}
+
 Board.prototype.tile_selected = function (tile) {
-    tile.highlight();
+    if (tile === b.previous_selection) {
+        tile.unhighligh();
+        b.previous_selection = null;
+    }
+
+    if (b.previous_selection !== null) {
+        /* we already have a tile selected */
+        if (tile.name === b.previous_selection.name) {
+            /* same tile type */
+            b.remove_element_from_board(tile.dom_ref);
+            b.remove_element_from_board(b.previous_selection.dom_ref);
+            b.previous_selection = null;
+            // FIXME: set position to null on the internal board too 
+        } else {
+            b.previous_selection.unhighligh();
+            b.previous_selection = null;
+        }
+    } else {
+        tile.highlight();
+        b.previous_selection = tile;
+    }
 }
 
 Board.prototype.get_def = function () {
