@@ -66,6 +66,7 @@ Tile.prototype.create_dom_elem = function() {
     g.appendChild(u);
     var self = this;
     g.onclick = function () { b.tile_selected(self); };
+    g.onmousedown = function (e) { if (e.which != 1) { b.remove_tile(self); return true;} };
     this.dom_ref = g;
     return g;
 }
@@ -230,28 +231,97 @@ Board.prototype.remove_element_from_board = function (e) {
     b.translate_to_position(e, -200, -200);
 }
 
+Board.prototype.path_exists = function(e1, e2) {
+    /* check if allowed path exists between the two given elements
+     */
+    // check if direct path exists
+    if (e1.x == e2.x) {
+        // direct path might exist in the y axis
+        if (e1.y < e2.y) {
+            var from = e1.y;
+            var to = e2.y;
+        } else {
+            var from = e2.y;
+            var to = e1.y;
+        }
+
+        for (var i=from+1; i<to; i++) {
+            if (b.board[i][e1.x] !== null) {
+                // non-empty tile seen in the path
+                console.log('same x break for pos '+i);
+                break;
+            }
+        }    
+
+        console.log(i+' '+to);
+        if (i === to) {
+            console.log('direct path found on y axis '+from+' '+to+' '+i);
+            return true;
+        }
+    }
+    if (e1.y == e2.y) {
+        // direct path might exist in the x axis
+        if (e1.x < e2.x) {
+            var from = e1.x;
+            var to = e2.x;
+        } else {
+            var from = e2.x;
+            var to = e1.x;
+        }
+
+        for (var i=from+1; i<to; i++) {
+            if (b.board[e1.y][i] !== null) {
+                // non-empty tile seen in the path
+                console.log('same y break for pos '+i);
+                break;
+            }
+        }    
+
+        console.log(i+' '+to);
+        if (i === to) {
+            console.log('direct path found on x axis '+from+' '+to+' '+i);
+            return true;
+        }
+    }
+    console.log('returning false');
+    return false;
+}
+
 Board.prototype.is_ok_to_pair = function (e1, e2) {
     if (e1.name !== e2.name) {
         return false;
     }
 
-    /*   [x-1, y-1] [x, y-1] [x+1, y-1]
+    /*      -   [x, y-1]  -
      *   [x-1, y] e1 [x+1, y]
-     *   [x-1, y+1] [x, y+1] [x+1, y+1]
+     *      -   [x, y+1]  -
      */
     // are they adjacent?
-    if (((e2.x+1) === e1.x && e2.y+1 === e1.y) ||
-        (e2.x === e1.x && e2.y+1 === e1.y) ||
-        (e2.x-1 === e1.x && e2.y+1 === e1.y) ||
+    if ((e2.x === e1.x && e2.y+1 === e1.y) ||
         (e2.x+1 === e1.x && e2.y === e1.y) ||
         (e2.x-1 === e1.x && e2.y === e1.y) ||
-        (e2.x+1 === e1.x && e2.y-1 === e1.y) ||
-        (e2.x === e1.x && e2.y-1 === e1.y) ||
-        (e2.x-1 === e1.x && e2.y-1 === e1.y)) {
+        (e2.x === e1.x && e2.y-1 === e1.y) ) {
         return true;
     }
+
+    // is there a path between the nodes without obstuctions
+    // and with no more than 2 corners
+    return b.path_exists(e1, e2);
+
     console.log("not ok to pair "+e1.x+" "+e1.y+" "+e2.x+" "+e2.y);
+    /*
+    for each type of tile:
+        for each tile:
+            see if other tiles are reachable
+    */
     return false;
+}
+
+Board.prototype.remove_tile = function (tile) {
+    /* remove element from visual and internal boards
+     */
+    b.remove_element_from_board(tile.dom_ref);
+    b.board[tile.y][tile.x] = null;
 }
 
 Board.prototype.tile_selected = function (tile) {
@@ -264,10 +334,9 @@ Board.prototype.tile_selected = function (tile) {
         /* we already have a tile selected */
         if (tile.name === b.previous_selection.name && b.is_ok_to_pair(tile, b.previous_selection)) {
             /* same tile type */
-            b.remove_element_from_board(tile.dom_ref);
-            b.remove_element_from_board(b.previous_selection.dom_ref);
+            b.remove_tile(tile);
+            b.remove_tile(b.previous_selection);
             b.previous_selection = null;
-            // FIXME: set position to null on the internal board too 
         } else {
             b.previous_selection.unhighligh();
             b.previous_selection = null;
