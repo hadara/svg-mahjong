@@ -88,7 +88,7 @@ Tile.prototype.highlight = function() {
     this.bg.setAttribute('opacity', 0.4);
 }
 
-Tile.prototype.unhighligh = function() {
+Tile.prototype.unhighlight = function() {
     this.bg.setAttribute('opacity', 0);
 }
 
@@ -197,7 +197,7 @@ Board.prototype.get_random_free_position = function() {
     while (1) {
         var rand_x = Math.floor(Math.random()*this.width);
         var rand_y = Math.floor(Math.random()*this.height);
-        // XXX: do it more intelligently
+        // FIXME: do it more intelligently
         if (this.board[rand_y][rand_x] === null) {
             return Array(rand_x, rand_y);
         }
@@ -240,78 +240,22 @@ Board.prototype.init = function() {
         this.position_tile(tp[1]);
         my_log('positioning done');
     }
-
-    //this.get_all_possible_moves();
 }
 
 Board.prototype.get_all_possible_moves = function() {
     var moves = Array();
     for (var i=0; i<this.width; i++) {
         for (var j=0; j<this.height; j++) {
-            this.get_moves_from_tile(this.board[j][i], Array(), moves);
+            if (this.board[j][i] !== null) {
+                this.get_moves_from_tile(this.board[j][i], Array(), moves);
+            }
         }
     }
+    return moves;
 }
 
 Board.prototype.remove_element_from_board = function (e) {
     b.translate_to_position(e, -200, -200);
-}
-
-Board.prototype.path_exists = function(e1, e2) {
-    /* check if allowed path exists between the two given elements
-     */
-
-    // check if direct path exists
-    if (e1.x == e2.x) {
-        // direct path might exist in the y axis
-        if (e1.y < e2.y) {
-            var from = e1.y;
-            var to = e2.y;
-        } else {
-            var from = e2.y;
-            var to = e1.y;
-        }
-
-        for (var i=from+1; i<to; i++) {
-            if (b.board[i][e1.x] !== null) {
-                // non-empty tile seen in the path
-                my_log('same x break for pos '+i);
-                break;
-            }
-        }    
-
-        my_log(i+' '+to);
-        if (i === to) {
-            my_log('direct path found on y axis '+from+' '+to+' '+i);
-            return true;
-        }
-    }
-    if (e1.y == e2.y) {
-        // direct path might exist in the x axis
-        if (e1.x < e2.x) {
-            var from = e1.x;
-            var to = e2.x;
-        } else {
-            var from = e2.x;
-            var to = e1.x;
-        }
-
-        for (var i=from+1; i<to; i++) {
-            if (b.board[e1.y][i] !== null) {
-                // non-empty tile seen in the path
-                my_log('same y break for pos '+i);
-                break;
-            }
-        }    
-
-        my_log(i+' '+to);
-        if (i === to) {
-            my_log('direct path found on x axis '+from+' '+to+' '+i);
-            return true;
-        }
-    }
-    my_log('returning false');
-    return false;
 }
 
 Board.prototype.print_path = function (path) {
@@ -462,17 +406,6 @@ xA        } else if (lastelem.name !== undefined) {
         this.get_moves_from_tile(e1, path, paths);
         path.pop();
     }
-
-/*
-    for each side of e1:
-        if get_path_corner_count(path) > MAX_ALLOWED_PATHS:
-            return path.pop()
-        if side is of same type:
-            paths.push(path)
-            return path + side_tile
-        if side is free:
-            get_moves_from_tile(side_tile, path)
-*/
 }
 
 Board.prototype.is_ok_to_pair = function (e1, e2) {
@@ -494,23 +427,6 @@ Board.prototype.is_ok_to_pair = function (e1, e2) {
         }
     }
 
-    /*      -   [x, y-1]  -
-     *   [x-1, y] e1 [x+1, y]
-     *      -   [x, y+1]  -
-     */
-    // are they adjacent?
-    if ((e2.x === e1.x && e2.y+1 === e1.y) ||
-        (e2.x+1 === e1.x && e2.y === e1.y) ||
-        (e2.x-1 === e1.x && e2.y === e1.y) ||
-        (e2.x === e1.x && e2.y-1 === e1.y) ) {
-        return true;
-    }
-
-    // is there a path between the nodes without obstuctions
-    // and with no more than 2 corners
-    return b.path_exists(e1, e2);
-
-    my_log("not ok to pair "+e1.x+" "+e1.y+" "+e2.x+" "+e2.y);
     return false;
 }
 
@@ -523,8 +439,9 @@ Board.prototype.remove_tile = function (tile) {
 
 Board.prototype.tile_selected = function (tile) {
     if (tile === b.previous_selection) {
-        tile.unhighligh();
+        b.previous_selection.unhighlight();
         b.previous_selection = null;
+        return;
     }
 
     if (b.previous_selection !== null) {
@@ -534,8 +451,13 @@ Board.prototype.tile_selected = function (tile) {
             b.remove_tile(tile);
             b.remove_tile(b.previous_selection);
             b.previous_selection = null;
+            var paths = b.get_all_possible_moves();
+            if (paths.length === 0) {
+                alert("No more moves!");
+                b.init();
+            }
         } else {
-            b.previous_selection.unhighligh();
+            b.previous_selection.unhighlight();
             b.previous_selection = null;
         }
     } else {
@@ -551,11 +473,6 @@ Board.prototype.get_def = function () {
 Board.prototype.create_use = function () {
     use = document.createElementNS(SVGNS, "use");
     return use;
-}
-
-Board.prototype.get_bg = function () {
-    var background = svgdoc.getElementById('TILE_2').cloneNode(true);
-    return background;
 }
 
 function init() {
