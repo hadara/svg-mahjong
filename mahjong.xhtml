@@ -230,7 +230,7 @@ Board.prototype.init = function() {
         my_log('positioning done');
     }
 
-    this.get_all_possible_moves();
+    //this.get_all_possible_moves();
 }
 
 Board.prototype.get_all_possible_moves = function() {
@@ -313,7 +313,7 @@ Board.prototype.print_path = function (path) {
 }
 
 Board.prototype.get_path_corner_count = function (path) {
-    //this.print_path(path);
+    this.print_path(path);
     
     var DIRECTION_X = 0;
     var DIRECTION_Y = 1;
@@ -337,7 +337,10 @@ Board.prototype.get_path_corner_count = function (path) {
             cur_direction = DIRECTION_Y;
             corners += 1;
         }
+        lastelem = e;
     }
+    this.print_path(path);
+    console.log(corners);
     return corners;
 }
 
@@ -352,24 +355,16 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths) {
         [1, 0], // right
         [0, 1] // below
     );
-    var MAX_ALLOWED_PATHS = 2;
-
-    /*
-    if (path.length > 15 || paths.length > 1) {
-        lasjdsaldkjasldsadas();
-        return;
-    }
-    */
+    var MAX_ALLOWED_CORNERS = 3;
 
     if (path.length === 0) {
         path.push(e1);
     }
 
-    if (path.length > 10) {
-        return;
-    }
+    var corner_count = this.get_path_corner_count(path);
+    my_log('conerts'+corner_count);
 
-    if (this.get_path_corner_count(path) > MAX_ALLOWED_PATHS) {
+    if (corner_count > MAX_ALLOWED_CORNERS) {
         // push selection to paths if we have success
         // no need to check for match if 
         my_log('path count too large');
@@ -395,7 +390,7 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths) {
             }
 
             paths.push(a);
-            console.log('found a good path');
+            console.log('found a good path corners:'+corner_count);
             this.print_path(a);
             my_log('identity match succeeded');
             return;
@@ -444,8 +439,8 @@ xA        } else if (lastelem.name !== undefined) {
             }
         } else {
             // not within the board, recurse if less than 1 step away
-            if ((tile_pos[0] >= -1 && tile_pos[0] < this.width+1) &&
-                (tile_pos[1] >= -1 && tile_pos[0] < this.height+1)) {
+            if ((tile_pos[0] >= -1 && tile_pos[0] <= this.width) &&
+                (tile_pos[1] >= -1 && tile_pos[1] <= this.height)) {
                 my_log('not on board tile pos: '+tile_pos[0]+' '+tile_pos[1]);
                 //var tmp = b.board[tile_pos[1]][tile_pos[0]];
                 var tmp = {'x': tile_pos[0], 'y': tile_pos[1]}
@@ -476,6 +471,20 @@ xA        } else if (lastelem.name !== undefined) {
 Board.prototype.is_ok_to_pair = function (e1, e2) {
     if (e1.name !== e2.name) {
         return false;
+    }
+
+    var paths = Array();
+    b.get_moves_from_tile(e1, Array(), paths);
+    console.log('possible paths:'+paths.length);
+    for (var i=0; i<paths.length; i++) {
+        var plast = paths[i][paths[i].length-1];
+        // this should actually be the board element so
+        // maybe we can just compare pointers... does something
+        // like that exist in the JS
+        console.log('compare: '+e2.x+';'+e2.y+' - '+plast.x+';'+plast.y);
+        if (plast.x === e2.x && plast.y === e2.y) {
+            return true;
+        }
     }
 
     /*      -   [x, y-1]  -
