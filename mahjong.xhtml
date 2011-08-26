@@ -66,6 +66,12 @@ Tile.prototype.create_dom_elem = function() {
     var u = document.createElementNS(SVGNS, "use");
     var t = svgdoc.getElementById(this.name);
     var bb = t.getBBox();
+    if (this.name === 'CHARACTER_1') {
+        // FIXME: analyze that element and understand why it can't be handled
+        // like others.
+        console.log('char1 '+bb.x+' '+bb.y);
+        bb.x = 0;
+    }
     u.setAttribute('x', -bb.x);
     u.setAttribute('y', -bb.y);
     u.setAttributeNS("http://www.w3.org/1999/xlink", "href", 'traditional.svg#'+this.name);
@@ -153,6 +159,8 @@ Board.prototype.previous_selection = null;
 Board.prototype.height = 8;
 Board.prototype.width = 18;
 
+Board.prototype.Y_PADDING = 100;
+
 Board.prototype.get_tile_by_name = function(name) {
     return new Tile(name);
 
@@ -161,6 +169,9 @@ Board.prototype.get_tile_by_name = function(name) {
     var u = this.create_use();
     var t = svgdoc.getElementById(name);
     var bb = t.getBBox();
+    if (name === 'CHARACTER_1') {
+        console.log('bbox for char 1:'+bb.x+' '+bb.y);
+    }
     u.setAttribute('x', -bb.x);
     u.setAttribute('y', -bb.y);
     u.setAttributeNS("http://www.w3.org/1999/xlink", "href", 'traditional.svg#'+name);
@@ -200,7 +211,7 @@ Board.prototype.translate_to_position = function(elem, x, y) {
 Board.prototype.position_tile = function(t) {
     var coords = this.get_random_free_position();
     this.board[coords[1]][coords[0]] = t;
-    this.translate_to_position(t.dom_ref, coords[0]*t.width, coords[1]*t.height);
+    this.translate_to_position(t.dom_ref, coords[0]*t.width, this.Y_PADDING+(coords[1]*t.height));
     this.dom_board.appendChild(t.dom_ref);
     t.set_board_pos(t, coords[0], coords[1]);
 }
@@ -216,9 +227,9 @@ Board.prototype.init = function() {
         }
         this.board.push(tmp_ar);
     }
-    this.empty_positions = this.height * this.width;
 
     this.dom_board = document.getElementById('hgameboard');
+
     var element_pairs = (this.height*this.width)/2;
     for (i=0; i<element_pairs; i++) {
         var rtile = this.get_random_tile_name();
@@ -313,8 +324,6 @@ Board.prototype.print_path = function (path) {
 }
 
 Board.prototype.get_path_corner_count = function (path) {
-    this.print_path(path);
-    
     var DIRECTION_X = 0;
     var DIRECTION_Y = 1;
 
@@ -339,8 +348,7 @@ Board.prototype.get_path_corner_count = function (path) {
         }
         lastelem = e;
     }
-    this.print_path(path);
-    console.log(corners);
+    //this.print_path(path);
     return corners;
 }
 
@@ -390,7 +398,6 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths) {
             }
 
             paths.push(a);
-            console.log('found a good path corners:'+corner_count);
             this.print_path(a);
             my_log('identity match succeeded');
             return;
@@ -576,7 +583,7 @@ function init() {
 <embed id="tileset" src="traditional.svg" width="0" height="0" type="image/svg+xml"></embed>
 
 <!-- viewBox="0 0 100 100"  -->
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 800 800" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 900 900" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard">
   <defs id="bg_elems">
     <rect fill="yellow" opacity="0" x="400" y="400" height="100" width="100" />
   </defs>
