@@ -11,6 +11,13 @@ var svgwin = null;
 
 var global_id = 0;
 
+function my_log(s) {
+    return;
+    if (console !== undefined) {
+        console.log(s);
+    }
+}
+
 function Tile(name) {
     this.name = name;
     this.id = global_id++;
@@ -51,7 +58,7 @@ Tile.prototype.create_g = function() {
 }
 
 Tile.prototype.create_dom_elem = function() {
-    console.log('create elem '+this.name);
+    my_log('create elem '+this.name);
     var g = this.create_g();
     var bg = this.create_background();
     this.bg = bg;
@@ -168,7 +175,6 @@ Board.prototype.get_tile_pair = function(tile_name) {
 
 Board.prototype.get_random_tile_name = function() {
     var randpos = Math.floor(Math.random()*this.tiles.length);
-    console.log(randpos);
     return this.tiles[randpos];
 }
 
@@ -180,7 +186,6 @@ Board.prototype.get_random_free_position = function() {
     while (1) {
         var rand_x = Math.floor(Math.random()*this.width);
         var rand_y = Math.floor(Math.random()*this.height);
-        console.log(rand_x+' '+rand_y);
         // XXX: do it more intelligently
         if (this.board[rand_y][rand_x] === null) {
             return Array(rand_x, rand_y);
@@ -189,7 +194,6 @@ Board.prototype.get_random_free_position = function() {
 }
 
 Board.prototype.translate_to_position = function(elem, x, y) {
-    console.log('translate:'+x+' '+y);
     elem.setAttribute('transform', 'translate('+x+', '+y+')');
 }
 
@@ -218,12 +222,23 @@ Board.prototype.init = function() {
     var element_pairs = (this.height*this.width)/2;
     for (i=0; i<element_pairs; i++) {
         var rtile = this.get_random_tile_name();
-        console.log('random tile '+rtile);
+        my_log('random tile '+rtile);
         var tp = this.get_tile_pair(rtile);
-        console.log('positioning '+tp);
+        my_log('positioning '+tp);
         this.position_tile(tp[0]);
         this.position_tile(tp[1]);
-        console.log('positioning done');
+        my_log('positioning done');
+    }
+
+    this.get_all_possible_moves();
+}
+
+Board.prototype.get_all_possible_moves = function() {
+    var moves = Array();
+    for (var i=0; i<this.width; i++) {
+        for (var j=0; j<this.height; j++) {
+            this.get_moves_from_tile(this.board[j][i], Array(), moves);
+        }
     }
 }
 
@@ -234,6 +249,7 @@ Board.prototype.remove_element_from_board = function (e) {
 Board.prototype.path_exists = function(e1, e2) {
     /* check if allowed path exists between the two given elements
      */
+
     // check if direct path exists
     if (e1.x == e2.x) {
         // direct path might exist in the y axis
@@ -248,14 +264,14 @@ Board.prototype.path_exists = function(e1, e2) {
         for (var i=from+1; i<to; i++) {
             if (b.board[i][e1.x] !== null) {
                 // non-empty tile seen in the path
-                console.log('same x break for pos '+i);
+                my_log('same x break for pos '+i);
                 break;
             }
         }    
 
-        console.log(i+' '+to);
+        my_log(i+' '+to);
         if (i === to) {
-            console.log('direct path found on y axis '+from+' '+to+' '+i);
+            my_log('direct path found on y axis '+from+' '+to+' '+i);
             return true;
         }
     }
@@ -272,19 +288,189 @@ Board.prototype.path_exists = function(e1, e2) {
         for (var i=from+1; i<to; i++) {
             if (b.board[e1.y][i] !== null) {
                 // non-empty tile seen in the path
-                console.log('same y break for pos '+i);
+                my_log('same y break for pos '+i);
                 break;
             }
         }    
 
-        console.log(i+' '+to);
+        my_log(i+' '+to);
         if (i === to) {
-            console.log('direct path found on x axis '+from+' '+to+' '+i);
+            my_log('direct path found on x axis '+from+' '+to+' '+i);
             return true;
         }
     }
-    console.log('returning false');
+    my_log('returning false');
     return false;
+}
+
+Board.prototype.print_path = function (path) {
+    var pstr = 'path:';
+    for (var i=0; i<path.length; i++) {
+        pstr += path[i].x+';'+path[i].y;
+        pstr += ' ';
+    }
+    console.log(pstr);
+}
+
+Board.prototype.get_path_corner_count = function (path) {
+    //this.print_path(path);
+    
+    var DIRECTION_X = 0;
+    var DIRECTION_Y = 1;
+
+    if (path.length < 2) {
+        return 0;
+    }
+
+    var corners = 0;
+    
+    var cur_direction = null;
+    var lastelem = path[0];
+
+    for (var i=1; i<path.length; i++) {
+        var e = path[i];
+
+        if (lastelem.x === e.x && cur_direction !== DIRECTION_X) {
+            cur_direction = DIRECTION_X;
+            corners += 1;
+        } else if (lastelem.y === e.y && cur_direction !== DIRECTION_Y) {
+            cur_direction = DIRECTION_Y;
+            corners += 1;
+        }
+    }
+    return corners;
+}
+
+Board.prototype.get_moves_from_tile = function (e1, path, paths) {
+    /* append all the possible moves from the tile e1 into the paths array
+     * each path element will be an object that has at least x and y keys
+     */
+    my_log('recurse');
+    var SIDEMAP = Array(
+        [-1, 0], // left
+        [0, -1], // upper
+        [1, 0], // right
+        [0, 1] // below
+    );
+    var MAX_ALLOWED_PATHS = 2;
+
+    /*
+    if (path.length > 15 || paths.length > 1) {
+        lasjdsaldkjasldsadas();
+        return;
+    }
+    */
+
+    if (path.length === 0) {
+        path.push(e1);
+    }
+
+    if (path.length > 10) {
+        return;
+    }
+
+    if (this.get_path_corner_count(path) > MAX_ALLOWED_PATHS) {
+        // push selection to paths if we have success
+        // no need to check for match if 
+        my_log('path count too large');
+        return;
+    } 
+
+    if (path.length > 1) {
+        var lastelem = path[path.length-1];
+        my_log('lastelem '+lastelem);
+
+        if (lastelem.name === undefined) {
+            // is outside the board or is empty
+            my_log('last pathelem is empty');
+        } else if (lastelem.name === e1.name) {
+            // found a good path!
+            // construct a copy and store in the paths array
+            var a = Array();
+
+            for (var i=0; i<path.length; i++) {
+                var tmp = path[i];
+                my_log('push new path'+tmp.x+' '+tmp.y);
+                a.push({'x': tmp.x, 'y': tmp.y});
+            }
+
+            paths.push(a);
+            console.log('found a good path');
+            this.print_path(a);
+            my_log('identity match succeeded');
+            return;
+xA        } else if (lastelem.name !== undefined) {
+            // we have encountered taken position that did not match
+            // out identitiy. no need to investigate this path any further
+            console.log('f '+lastelem.name+' '+lastelem.x+' '+lastelem.y);
+            return;
+          }
+    }
+
+    var this_tile = path[path.length-1];
+    var last_elem = null;
+    if (path.length > 1) {
+        var last_elem = path[path.length-2];
+    }
+
+    for (i=0; i<4; i++) {
+        // check all the sides of the tile
+        var tile_pos = Array(this_tile.x+SIDEMAP[i][0], this_tile.y+SIDEMAP[i][1]);
+
+        if (last_elem !== null) {
+            my_log('check lastelem'+last_elem.x+' '+last_elem.y+'   '+tile_pos[0]+' '+tile_pos[1]);
+            if (tile_pos[0] === last_elem.x && tile_pos[1] === last_elem.y) {
+                // do not go back the same way we came from
+                continue;
+            }
+        }
+
+        my_log('investigate sidepos:'+tile_pos);
+
+        if ((tile_pos[0] >= 0 && tile_pos[0] < this.width) && 
+            (tile_pos[1] >= 0 && tile_pos[1] < this.height)) {
+            // is within the board
+            var tmp = b.board[tile_pos[1]][tile_pos[0]];
+
+            if (tmp === null) {
+                // empty position
+                tmp = {'x':tile_pos[0], 'y': tile_pos[1]};
+                my_log('recurse on empty position '+tmp);
+            } else {
+                // position is filled, if it's not a match then there's no need to continue
+                if (e1.name !== tmp.name) {
+                    continue;
+                }
+            }
+        } else {
+            // not within the board, recurse if less than 1 step away
+            if ((tile_pos[0] >= -1 && tile_pos[0] < this.width+1) &&
+                (tile_pos[1] >= -1 && tile_pos[0] < this.height+1)) {
+                my_log('not on board tile pos: '+tile_pos[0]+' '+tile_pos[1]);
+                //var tmp = b.board[tile_pos[1]][tile_pos[0]];
+                var tmp = {'x': tile_pos[0], 'y': tile_pos[1]}
+            } else {
+                // more than 1 step away from the board
+                my_log('continue:'+tile_pos);
+                continue;
+            }
+        }
+
+        path.push(tmp);
+        this.get_moves_from_tile(e1, path, paths);
+        path.pop();
+    }
+
+/*
+    for each side of e1:
+        if get_path_corner_count(path) > MAX_ALLOWED_PATHS:
+            return path.pop()
+        if side is of same type:
+            paths.push(path)
+            return path + side_tile
+        if side is free:
+            get_moves_from_tile(side_tile, path)
+*/
 }
 
 Board.prototype.is_ok_to_pair = function (e1, e2) {
@@ -308,12 +494,7 @@ Board.prototype.is_ok_to_pair = function (e1, e2) {
     // and with no more than 2 corners
     return b.path_exists(e1, e2);
 
-    console.log("not ok to pair "+e1.x+" "+e1.y+" "+e2.x+" "+e2.y);
-    /*
-    for each type of tile:
-        for each tile:
-            see if other tiles are reachable
-    */
+    my_log("not ok to pair "+e1.x+" "+e1.y+" "+e2.x+" "+e2.y);
     return false;
 }
 
