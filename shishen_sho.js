@@ -1,8 +1,8 @@
-<?xml version='1.0'?>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:svg="http://www.w3.org/2000/svg"  xmlns:xlink="http://www.w3.org/1999/xlink">
-<head>
-<script type='text/javascript'>
-<![CDATA[
+/* Shishen Sho mahjong game
+ * Copyright Sven Petai <hadara@bsd.ee> 2011
+ * Licence: GPLv3
+ * Artwork is taken from the KDE project and is under respective copyrights & licences
+ */
 
 var SVGNS = "http://www.w3.org/2000/svg";
 
@@ -69,7 +69,6 @@ Tile.prototype.create_dom_elem = function() {
     if (this.name === 'CHARACTER_1') {
         // FIXME: analyze that element and understand why it can't be handled
         // like others.
-        console.log('char1 '+bb.x+' '+bb.y);
         bb.x = 0;
     }
     u.setAttribute('x', -bb.x);
@@ -348,7 +347,6 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths) {
 xA        } else if (lastelem.name !== undefined) {
             // we have encountered taken position that did not match
             // out identitiy. no need to investigate this path any further
-            console.log('f '+lastelem.name+' '+lastelem.x+' '+lastelem.y);
             return;
           }
     }
@@ -415,13 +413,11 @@ Board.prototype.is_ok_to_pair = function (e1, e2) {
 
     var paths = Array();
     b.get_moves_from_tile(e1, Array(), paths);
-    console.log('possible paths:'+paths.length);
     for (var i=0; i<paths.length; i++) {
         var plast = paths[i][paths[i].length-1];
         // this should actually be the board element so
         // maybe we can just compare pointers... does something
         // like that exist in the JS
-        console.log('compare: '+e2.x+';'+e2.y+' - '+plast.x+';'+plast.y);
         if (plast.x === e2.x && plast.y === e2.y) {
             return true;
         }
@@ -476,35 +472,21 @@ Board.prototype.create_use = function () {
 }
 
 function init() {
-  // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
-  var embed = document.getElementById('tileset');
-  try {
-    svgdoc = embed.getSVGDocument();
-  } catch(exception) {
-    alert('getSVGDocument interface not available. Try some other browser.');
-  }
+    /* this hack gets access to the SVG artwork file through the embed element in the
+     * XHTML document
+     */
+    // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
+    var embed = document.getElementById('tileset');
+    try {
+        svgdoc = embed.getSVGDocument();
+    } catch(exception) {
+        alert('getSVGDocument interface not available. Try some other browser.');
+    }
+    
+    if (svgdoc && svgdoc.defaultView) {
+        svgwin = svgdoc.defaultView; 
+    }
   
-  if (svgdoc && svgdoc.defaultView) {
-    svgwin = svgdoc.defaultView; 
-  }
-
-  b = new Board();
-  b.init();
+    b = new Board();
+    b.init();
 }
-
-]]>
-</script>
-</head>
-<body onload="javascript:init();">
-
-<embed id="tileset" src="traditional.svg" width="0" height="0" type="image/svg+xml"></embed>
-
-<!-- viewBox="0 0 100 100"  -->
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 900 900" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:-1;" id="hgameboard">
-  <defs id="bg_elems">
-    <rect fill="yellow" opacity="0" x="400" y="400" height="100" width="100" />
-  </defs>
-</svg>
-
-</body>
-</html>
