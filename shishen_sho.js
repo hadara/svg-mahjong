@@ -7,6 +7,7 @@
 var SVGNS = "http://www.w3.org/2000/svg";
 
 var DEBUG = false;
+var TILESET_FILE = "artwork/traditional.svg";
 
 var svgdoc = null;
 var svgwin = null;
@@ -74,7 +75,7 @@ Tile.prototype.create_dom_elem = function() {
     }
     u.setAttribute('x', -bb.x);
     u.setAttribute('y', -bb.y);
-    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", 'traditional.svg#'+this.name);
+    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", TILESET_FILE+'#'+this.name);
     g.appendChild(bg);
     g.appendChild(u);
     var self = this;
