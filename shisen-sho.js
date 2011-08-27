@@ -12,7 +12,7 @@ var TILESETS = {
     "default": "artwork/default.svg"
 };
 
-var TILESET = "traditional"
+var TILESET = "default";
 
 var svgdoc = null;
 var svgwin = null;
@@ -76,12 +76,7 @@ Tile.prototype.create_dom_elem = function() {
         alert("couldn't find element "+this.name);
         return undefined;
     }
-    var bb = t.getBBox();
-    if (this.name === 'CHARACTER_1') {
-        // FIXME: analyze that element and understand why it can't be handled
-        // like others.
-        bb.x = 0;
-    }
+    var bb = getScreenBBox(t);
     u.setAttribute('x', -bb.x);
     u.setAttribute('y', -bb.y);
     u.setAttributeNS("http://www.w3.org/1999/xlink", "href", TILESETS[TILESET]+'#'+this.name);
@@ -224,6 +219,7 @@ Board.prototype.init = function() {
     }
 
     this.dom_board = document.getElementById('hgameboard');
+    svgroot = this.dom_board;
 
     var element_pairs = (this.height*this.width)/2;
     for (i=0; i<element_pairs; i++) {
