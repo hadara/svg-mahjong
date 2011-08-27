@@ -7,7 +7,12 @@
 var SVGNS = "http://www.w3.org/2000/svg";
 
 var DEBUG = false;
-var TILESET_FILE = "artwork/traditional.svg";
+var TILESETS = {
+    "traditional": "artwork/traditional.svg",
+    "default": "artwork/default.svg"
+};
+
+var TILESET = "traditional"
 
 var svgdoc = null;
 var svgwin = null;
@@ -67,6 +72,10 @@ Tile.prototype.create_dom_elem = function() {
 
     var u = document.createElementNS(SVGNS, "use");
     var t = svgdoc.getElementById(this.name);
+    if (t === undefined || t === null) {
+        alert("couldn't find element "+this.name);
+        return undefined;
+    }
     var bb = t.getBBox();
     if (this.name === 'CHARACTER_1') {
         // FIXME: analyze that element and understand why it can't be handled
@@ -75,7 +84,7 @@ Tile.prototype.create_dom_elem = function() {
     }
     u.setAttribute('x', -bb.x);
     u.setAttribute('y', -bb.y);
-    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", TILESET_FILE+'#'+this.name);
+    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", TILESETS[TILESET]+'#'+this.name);
     g.appendChild(bg);
     g.appendChild(u);
     var self = this;
@@ -461,11 +470,7 @@ Board.prototype.create_use = function () {
 function Game() {
 }
 
-Game.prototype.xhtml_init = function () {
-    /* this hack gets access to the SVG artwork file through the embed element in the
-     * XHTML document
-     */
-    // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
+Game.prototype.xhtml_embed_callback = function (self) {
     var embed = document.getElementById('tileset');
     try {
         svgdoc = embed.getSVGDocument();
@@ -476,13 +481,36 @@ Game.prototype.xhtml_init = function () {
     if (svgdoc && svgdoc.defaultView) {
         svgwin = svgdoc.defaultView; 
     }
+
+    console.log('start board init');
+    self.board_init();
+}
+
+Game.prototype.xhtml_init = function () {
+    /* this hack gets access to the SVG artwork file through the embed element in the
+     * XHTML document
+     */
+    // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
+    // <embed id="tileset" onload="alert('embed');" src="artwork/default.svgz" width="0" height="0" type="image/svg+xml"></embed>
+    var e = document.createElement("embed");
+    e.setAttribute("id", "tileset");
+    e.setAttribute("src", TILESETS[TILESET]);
+    e.setAttribute("width", "0");
+    e.setAttribute("height", "0");
+    e.setAttribute("type", "image/svg+xml");
+    var self = this;
+    e.onload = function () { self.xhtml_embed_callback(self) };
+    document.getElementsByTagName('body')[0].appendChild(e);
+}
+
+Game.prototype.board_init = function () {
+    console.log('board init');
+    b = new Board();
+    b.init();
 }
 
 Game.prototype.init = function () {
     this.xhtml_init()
-
-    b = new Board();
-    b.init();
 }
 
 function init() {
