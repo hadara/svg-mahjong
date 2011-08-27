@@ -250,7 +250,7 @@ Board.prototype.print_path = function (path) {
         pstr += path[i].x+';'+path[i].y;
         pstr += ' ';
     }
-    console.log(pstr);
+    my_log(pstr);
 }
 
 Board.prototype.get_path_corner_count = function (path) {
@@ -458,7 +458,10 @@ Board.prototype.create_use = function () {
     return use;
 }
 
-function init() {
+function Game() {
+}
+
+Game.prototype.xhtml_init = function () {
     /* this hack gets access to the SVG artwork file through the embed element in the
      * XHTML document
      */
@@ -473,7 +476,16 @@ function init() {
     if (svgdoc && svgdoc.defaultView) {
         svgwin = svgdoc.defaultView; 
     }
-  
+}
+
+Game.prototype.init = function () {
+    this.xhtml_init()
+
     b = new Board();
     b.init();
+}
+
+function init() {
+    game = new Game();
+    game.init();
 }
