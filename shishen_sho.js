@@ -6,14 +6,15 @@
 
 var SVGNS = "http://www.w3.org/2000/svg";
 
+var DEBUG = false;
+
 var svgdoc = null;
 var svgwin = null;
 
 var global_id = 0;
 
 function my_log(s) {
-    return;
-    if (console !== undefined) {
+    if (DEBUG === true && console !== undefined) {
         console.log(s);
     }
 }
@@ -162,21 +163,6 @@ Board.prototype.Y_PADDING = 100;
 
 Board.prototype.get_tile_by_name = function(name) {
     return new Tile(name);
-
-    var g = this.create_g();
-    var s = this.create_shadow();
-    var u = this.create_use();
-    var t = svgdoc.getElementById(name);
-    var bb = t.getBBox();
-    if (name === 'CHARACTER_1') {
-        console.log('bbox for char 1:'+bb.x+' '+bb.y);
-    }
-    u.setAttribute('x', -bb.x);
-    u.setAttribute('y', -bb.y);
-    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", 'traditional.svg#'+name);
-    g.appendChild(s);
-    g.appendChild(u);
-    return g;
 }
 
 Board.prototype.get_tile_pair = function(tile_name) {
