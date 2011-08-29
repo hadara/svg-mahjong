@@ -5,6 +5,7 @@
  */
 
 var SVGNS = "http://www.w3.org/2000/svg";
+var XLINKNS = "http://www.w3.org/1999/xlink";
 
 var DEBUG = false;
 var TILESETS = {
@@ -100,7 +101,7 @@ Tile.prototype.create_dom_elem = function() {
         var tile_href =  TILESETS[TILESET]+'#'+this.name;
     }
 
-    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", tile_href);
+    u.setAttributeNS(XLINKNS, "href", tile_href);
     g.appendChild(bg);
     g.appendChild(u);
     g.setAttribute('id', 'tile_'+global_id);
@@ -451,9 +452,28 @@ Board.prototype.is_ok_to_pair = function (e1, e2) {
     return false;
 }
 
+Board.prototype.cleanup_tile_animation = function (tile) {
+    /* remove the tile and animation after the hide animation is finished
+     */
+    b.remove_element_from_board(tile.dom_ref);
+    svgroot.removeChild(tile.anim);
+    delete tile.anim;
+}
+
 Board.prototype.remove_tile = function (tile) {
     /* remove element from visual and internal boards
      */
+    var master_anim = document.getElementById('tile_hide_effect');
+    var anim = master_anim.cloneNode(false);
+    console.log(tile.dom_ref.getAttribute('id'));
+    anim.setAttributeNS(XLINKNS, 'href', '#'+tile.dom_ref.getAttribute('id'));
+    svgroot.appendChild(anim);
+    tile.anim = anim;
+    anim.beginElement();
+    var self = this;
+    // it would be far nicer to connect the animation cleanup with
+    // animation onend event but that doesn't seem to be widely implemented
+    setTimeout(function() { self.cleanup_tile_animation(tile) }, 1000);
     b.remove_element_from_board(tile.dom_ref);
     b.board[tile.y][tile.x] = null;
 }
@@ -539,7 +559,8 @@ Game.prototype.svg_init = function () {
 
 Game.prototype.import_tileset = function (cb) {
     // we really shouldn't have to import anything from the tileset
-    // but there are different bugs in current SVG implementations in the browsers
+    // but there are different bugs & missing functionality in current SVG 
+    // implementations in the browsers
     // which make it impossible to get access to the original elements
     // dom tree just by using USE tag with external reference.
     // webkit doesn't implement external references in the use tags
