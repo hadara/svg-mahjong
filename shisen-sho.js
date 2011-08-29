@@ -208,6 +208,23 @@ Board.prototype.positon_is_free = function() {
     return true;
 }
 
+Board.prototype.draw_path = function(path) {
+    var path_str = "";
+    var path_elem = document.createElementNS(SVGNS, "path");
+    var h = Tile.prototype.height;
+    var w = Tile.prototype.width;
+    path_str = "M "+(((path[0].x)*w)+w/2)+" "+(((path[0].y+1)*h)+h/2);
+    for (var i=1; i<path.length; i++) {
+        path_str += " L "+(((path[i].x)*w)+w/2)+" "+(((path[i].y+1)*h)+h/2);
+    }
+    path_elem.setAttribute("d", path_str);
+    path_elem.setAttribute("fill", "none");
+    path_elem.setAttribute("stroke", "red");
+    path_elem.setAttribute("stroke-width", "3");
+    svgroot.appendChild(path_elem);
+    setTimeout(function() { svgroot.removeChild(path_elem) }, 500);
+}
+
 Board.prototype.get_random_free_position = function() {
     while (1) {
         var rand_x = Math.floor(Math.random()*this.width);
@@ -445,6 +462,7 @@ Board.prototype.is_ok_to_pair = function (e1, e2) {
         // maybe we can just compare pointers... does something
         // like that exist in the JS
         if (plast.x === e2.x && plast.y === e2.y) {
+            this.draw_path(paths[i]);
             return true;
         }
     }
@@ -474,7 +492,6 @@ Board.prototype.remove_tile = function (tile) {
     // it would be far nicer to connect the animation cleanup with
     // animation onend event but that doesn't seem to be widely implemented
     setTimeout(function() { self.cleanup_tile_animation(tile) }, 1000);
-    b.remove_element_from_board(tile.dom_ref);
     b.board[tile.y][tile.x] = null;
 }
 
