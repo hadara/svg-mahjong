@@ -18,6 +18,7 @@ var svgdoc = null;
 var svgwin = null;
 
 var global_id = 0;
+var have_imported_tileset = false;
 
 function my_log(s) {
     if (DEBUG === true && console !== undefined) {
@@ -59,6 +60,13 @@ Tile.prototype.create_background = function() {
     return r;
 }
 
+//Tile.prototype.initial_positioning = function(self) {
+//    var pos = getScreenBBox(self.dom_ref);
+//    console.log(pos.x+" "+pos.y);
+//    //self.dom_ref.setAttribute('x', -pos.x);
+//    //self.dom_ref.setAttribute('y', -pos.y);
+//}
+
 Tile.prototype.create_g = function() {
     g = document.createElementNS(SVGNS, "g");
     return g;
@@ -76,12 +84,28 @@ Tile.prototype.create_dom_elem = function() {
         alert("couldn't find element "+this.name);
         return undefined;
     }
+
     var bb = getScreenBBox(t);
     u.setAttribute('x', -bb.x);
     u.setAttribute('y', -bb.y);
-    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", TILESETS[TILESET]+'#'+this.name);
+    my_log("orig tile coords: "+bb.x+" "+bb.y);
+    u.setAttribute('id', 'use_'+global_id);
+    global_id += 1;
+
+    if (have_imported_tileset) {
+        // our tileset is imported into our DOM
+        var tile_href = '#'+this.name;
+    } else {
+        // use external <use> reference
+        var tile_href =  TILESETS[TILESET]+'#'+this.name;
+    }
+
+    u.setAttributeNS("http://www.w3.org/1999/xlink", "href", tile_href);
     g.appendChild(bg);
     g.appendChild(u);
+    g.setAttribute('id', 'tile_'+global_id);
+    global_id += 1;
+
     var self = this;
     g.onclick = function () { b.tile_selected(self); };
     g.onmousedown = function (e) { if (e.which != 1) { b.remove_tile(self); return true;} };
@@ -195,6 +219,7 @@ Board.prototype.get_random_free_position = function() {
 }
 
 Board.prototype.translate_to_position = function(elem, x, y) {
+    my_log('translate to:'+x+';'+y);
     elem.setAttribute('transform', 'translate('+x+', '+y+')');
 }
 
@@ -203,6 +228,8 @@ Board.prototype.position_tile = function(t) {
     this.board[coords[1]][coords[0]] = t;
     this.translate_to_position(t.dom_ref, coords[0]*t.width, this.Y_PADDING+(coords[1]*t.height));
     this.dom_board.appendChild(t.dom_ref);
+    //t.initial_positioning(t);
+    //this.translate_to_position(t.dom_ref, coords[0]*t.width, this.Y_PADDING+(coords[1]*t.height));
     t.set_board_pos(t, coords[0], coords[1]);
 }
 
@@ -231,6 +258,12 @@ Board.prototype.init = function() {
         this.position_tile(tp[1]);
         my_log('positioning done');
     }
+
+    //var orig_tileset = document.getElementById('orig_tileset');
+    //if (orig_tileset) {
+    //    orig_tileset.setAttribute('style', 'display: none');
+    //}
+
 }
 
 Board.prototype.get_all_possible_moves = function() {
@@ -478,7 +511,7 @@ Game.prototype.xhtml_embed_callback = function (self) {
         svgwin = svgdoc.defaultView; 
     }
 
-    console.log('start board init');
+    my_log('start board init');
     self.board_init();
 }
 
@@ -499,14 +532,61 @@ Game.prototype.xhtml_init = function () {
     document.getElementsByTagName('body')[0].appendChild(e);
 }
 
+Game.prototype.svg_init = function () {
+    // not much to do in the SVG case
+    this.import_tileset(this.board_init);
+}
+
+Game.prototype.import_tileset = function (cb) {
+    // we really shouldn't have to import anything from the tileset
+    // but there are different bugs in current SVG implementations in the browsers
+    // which make it impossible to get access to the original elements
+    // dom tree just by using USE tag with external reference.
+    // webkit doesn't implement external references in the use tags
+    // firefox & opera do not seem to implement instanceRoot attribute for the USE elements
+    function fetchXML  (url, callback) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onreadystatechange = function (evt) {
+        //Do not explicitly handle errors, those should be
+        //visible via console output in the browser.
+        if (xhr.readyState === 4) {
+            callback(xhr.responseXML);
+        }
+        };
+        xhr.send(null);
+    };
+
+    //fetch the document
+    fetchXML(TILESETS[TILESET],function(newSVGDoc){
+        //import it into the current DOM
+        var n = document.importNode(newSVGDoc.documentElement, true);
+        n.setAttribute('x', -1000);
+        //n.setAttribute('y', 0);
+        //n.setAttribute('viewBox', "0 0 900 900");
+        n.setAttribute('id', 'orig_tileset');
+        // everything will be in our tree so just use DOM
+        svgdoc = document;
+        document.documentElement.appendChild(n);
+        have_imported_tileset = true;
+        cb();
+    }) 
+}
+
 Game.prototype.board_init = function () {
-    console.log('board init');
+    my_log('board init');
     b = new Board();
     b.init();
 }
 
 Game.prototype.init = function () {
-    this.xhtml_init()
+    var t = document.getElementsByTagName("html");
+
+    if (t && t.length > 0) {
+        this.xhtml_init()
+    } else {
+        this.svg_init();
+    }
 }
 
 function init() {
