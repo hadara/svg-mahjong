@@ -7,13 +7,14 @@
 var SVGNS = "http://www.w3.org/2000/svg";
 var XLINKNS = "http://www.w3.org/1999/xlink";
 
-var DEBUG = false;
 var TILESETS = {
     "traditional": "artwork/traditional.svg",
     "default": "artwork/default.svg"
 };
 
 var TILESET = "default";
+
+var DEBUG = false;
 
 var svgdoc = null;
 
@@ -40,9 +41,9 @@ Tile.prototype.width = 69;
 Tile.prototype.x = null;
 Tile.prototype.y = null;
 
-Tile.prototype.set_board_pos = function(self, x, y) {
-    self.x = x;
-    self.y = y;
+Tile.prototype.set_board_pos = function(x, y) {
+    this.x = x;
+    this.y = y;
 }
 
 Tile.prototype.create_background = function() {
@@ -119,7 +120,9 @@ Tile.prototype.create_dom_elem = function() {
 
     var self = this;
     g.onclick = function () { b.tile_selected(self); };
-    g.onmousedown = function (e) { if (e.which != 1) { b.remove_tile(self); return true;} };
+    if (DEBUG) {
+        g.onmousedown = function (e) { if (e.which != 1) { b.remove_tile(self); return true;} };
+    }
     this.dom_ref = g;
     return g;
 }
@@ -251,7 +254,7 @@ Board.prototype.position_tile = function(t) {
     var coords = this.get_random_free_position();
     this.board[coords[1]][coords[0]] = t;
     this.translate_to_position(t.dom_ref, coords[0]*t.width, this.Y_PADDING+(coords[1]*t.height));
-    t.set_board_pos(t, coords[0], coords[1]);
+    t.set_board_pos(coords[0], coords[1]);
 }
 
 Board.prototype.construct_board = function() {
@@ -580,11 +583,14 @@ function Game() {
 Game.prototype.cheat_mode = false;
 Game.prototype.started_at = null;
 Game.prototype.KEY_HINT = 72;
+Game.prototype.KEY_NEW = 78;
 
 Game.prototype.keyhandler = function (evt) {
     key = evt.which;
-    if (key == game.KEY_HINT) {
-        game.show_hint();
+    if (key === game.KEY_HINT) {
+        this.show_hint();
+    } else if (key === game.KEY_NEW) {
+        this.new_game();
     } else {
         my_log('unknown key pressed:'+key);
     }
@@ -601,8 +607,9 @@ Game.prototype.show_hint = function () {
     }
 }
 
-Game.prototype.xhtml_embed_callback = function (self) {
+Game.prototype.xhtml_embed_callback = function () {
     var embed = document.getElementById('tileset');
+
     try {
         svgdoc = embed.getSVGDocument();
     } catch(exception) {
@@ -610,7 +617,7 @@ Game.prototype.xhtml_embed_callback = function (self) {
     }
     
     my_log('start board init');
-    self.board_init();
+    this.board_init();
 }
 
 Game.prototype.xhtml_init = function () {
@@ -626,7 +633,7 @@ Game.prototype.xhtml_init = function () {
     e.setAttribute("height", "0");
     e.setAttribute("type", "image/svg+xml");
     var self = this;
-    e.onload = function () { self.xhtml_embed_callback(self) };
+    e.onload = function () { self.xhtml_embed_callback() };
     document.getElementsByTagName('body')[0].appendChild(e);
 }
 
@@ -674,20 +681,27 @@ Game.prototype.import_tileset = function (cb) {
 
 Game.prototype.board_init = function () {
     my_log('board init');
-    b = new Board();
-    b.init();
+    this.b = new Board();
+    b = this.b; // FIXME: get rid of it
+    this.b.init();
+}
+
+Game.prototype.new_game = function () {
+    this.reset();
+    this.b.init();
 }
 
 Game.prototype.reset = function () {
     this.cheat_mode = false;
     this.started_at = null;
+    // clear board & DOM
 }
 
 Game.prototype.init = function () {
-    document.onkeydown = this.keyhandler;
-    document.onkeyup = this.keyhandler;
+    var self = this;
+    document.onkeydown = function (e) { return self.keyhandler(e) };
 
-    this.reset()
+    this.reset();
 
     var t = document.getElementsByTagName("html");
     if (t && t.length > 0) {
