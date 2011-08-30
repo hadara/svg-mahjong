@@ -284,16 +284,24 @@ Board.prototype.init = function() {
 
 }
 
-Board.prototype.get_all_possible_moves = function() {
+Board.prototype.get_all_possible_moves = function(limit) {
+    /* FIXME: document */
     var moves = Array();
     for (var i=0; i<this.width; i++) {
         for (var j=0; j<this.height; j++) {
             if (this.board[j][i] !== null) {
-                this.get_moves_from_tile(this.board[j][i], Array(), moves);
+                this.get_moves_from_tile(this.board[j][i], Array(), moves, limit);
             }
         }
     }
     return moves;
+}
+
+Board.prototype.have_moves_left = function() {
+    if (this.get_all_possible_moves(1).length > 0) {
+        return true;
+    }
+    return false;
 }
 
 Board.prototype.remove_element_from_board = function (e) {
@@ -338,9 +346,14 @@ Board.prototype.get_path_corner_count = function (path) {
     return corners;
 }
 
-Board.prototype.get_moves_from_tile = function (e1, path, paths) {
+Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem) {
     /* append all the possible moves from the tile e1 into the paths array
      * each path element will be an object that has at least x and y keys
+     *
+     * @arg limit: can be used to specify how many paths at the most do you want to get
+     *    If undefined then all the possible paths are returned.
+     * @arg end_elem: can be used to specify that you only want paths that end with certain
+     *    element. Has to be Tile object if defined.  
      */
     my_log('recurse');
     var SIDEMAP = Array(
@@ -353,6 +366,12 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths) {
 
     if (path.length === 0) {
         path.push(e1);
+    }
+
+    if (limit !== undefined && limit <= paths.length) {
+        // if caller did want all possible paths and we already have enough
+        // then just return right away
+        return;
     }
 
     var corner_count = this.get_path_corner_count(path);
@@ -372,7 +391,10 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths) {
         if (lastelem.name === undefined) {
             // is outside the board or is empty
             my_log('last pathelem is empty');
-        } else if (lastelem.name === e1.name) {
+        } else if (lastelem.name === e1.name && 
+            (end_elem === undefined || 
+                (lastelem.x === end_elem.x && lastelem.y === end_elem.y)
+            )) {
             // found a good path!
             // construct a copy and store in the paths array
             var a = Array();
@@ -444,7 +466,7 @@ xA        } else if (lastelem.name !== undefined) {
         }
 
         path.push(tmp);
-        this.get_moves_from_tile(e1, path, paths);
+        this.get_moves_from_tile(e1, path, paths, limit, end_elem);
         path.pop();
     }
 }
@@ -455,7 +477,7 @@ Board.prototype.is_ok_to_pair = function (e1, e2) {
     }
 
     var paths = Array();
-    b.get_moves_from_tile(e1, Array(), paths);
+    b.get_moves_from_tile(e1, Array(), paths, 1, e2);
     for (var i=0; i<paths.length; i++) {
         var plast = paths[i][paths[i].length-1];
         // this should actually be the board element so
@@ -509,8 +531,7 @@ Board.prototype.tile_selected = function (tile) {
             b.remove_tile(tile);
             b.remove_tile(b.previous_selection);
             b.previous_selection = null;
-            var paths = b.get_all_possible_moves();
-            if (paths.length === 0) {
+            if (b.have_moves_left() === false) {
                 alert("No more moves!");
                 b.init();
             }
