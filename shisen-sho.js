@@ -73,6 +73,16 @@ Tile.prototype.create_g = function() {
     return g;
 }
 
+Tile.prototype.get_bg = function() {
+    var origtile = svgdoc.getElementById("TILE_2");
+    var pos = getScreenBBox(origtile);
+    var bg = document.createElementNS(SVGNS, "use");
+    bg.setAttribute('x', -pos.x);
+    bg.setAttribute('y', -pos.y);
+    bg.setAttributeNS(XLINKNS, "href", TILESETS[TILESET]+"#TILE_2");
+    return bg;
+}
+
 Tile.prototype.create_dom_elem = function() {
     my_log('create elem '+this.name);
     var g = this.create_g();
@@ -102,6 +112,7 @@ Tile.prototype.create_dom_elem = function() {
     }
 
     u.setAttributeNS(XLINKNS, "href", tile_href);
+    g.appendChild(this.get_bg());
     g.appendChild(bg);
     g.appendChild(u);
     g.setAttribute('id', 'tile_'+global_id);
@@ -241,9 +252,6 @@ Board.prototype.position_tile = function(t) {
     var coords = this.get_random_free_position();
     this.board[coords[1]][coords[0]] = t;
     this.translate_to_position(t.dom_ref, coords[0]*t.width, this.Y_PADDING+(coords[1]*t.height));
-    this.dom_board.appendChild(t.dom_ref);
-    //t.initial_positioning(t);
-    //this.translate_to_position(t.dom_ref, coords[0]*t.width, this.Y_PADDING+(coords[1]*t.height));
     t.set_board_pos(t, coords[0], coords[1]);
 }
 
@@ -258,6 +266,18 @@ Board.prototype.construct_board = function() {
         this.board.push(tmp_ar);
     }
     this._free_positions = poslist;
+}
+
+Board.prototype.lay_out_board = function() {
+    /* injects tiles into the DOM tree in  correct order. 
+     * We have to do it as a separate step since SVG follows 
+     * painters model so the order in which tiles appear in the DOM matters
+     */
+    for (var i=0; i<this.height; i++) {
+        for (var j=0; j<this.width; j++) {
+            this.dom_board.appendChild(this.board[i][j].dom_ref);
+        }
+    }
 }
 
 Board.prototype.init = function() {
@@ -278,6 +298,7 @@ Board.prototype.init = function() {
         this.position_tile(tp[1]);
         my_log('positioning done');
     }
+    this.lay_out_board();
 
 }
 
