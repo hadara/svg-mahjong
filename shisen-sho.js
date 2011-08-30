@@ -16,7 +16,6 @@ var TILESETS = {
 var TILESET = "default";
 
 var svgdoc = null;
-var svgwin = null;
 
 var global_id = 0;
 var have_imported_tileset = false;
@@ -430,11 +429,11 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
             this.print_path(a);
             my_log('identity match succeeded');
             return;
-xA        } else if (lastelem.name !== undefined) {
+        } else if (lastelem.name !== undefined) {
             // we have encountered taken position that did not match
             // out identitiy. no need to investigate this path any further
             return;
-          }
+        }
     }
 
     var this_tile = path[path.length-1];
@@ -577,6 +576,31 @@ Board.prototype.create_use = function () {
 function Game() {
 }
 
+// has hints function been used?
+Game.prototype.cheat_mode = false;
+Game.prototype.started_at = null;
+Game.prototype.KEY_HINT = 72;
+
+Game.prototype.keyhandler = function (evt) {
+    key = evt.which;
+    if (key == game.KEY_HINT) {
+        game.show_hint();
+    } else {
+        my_log('unknown key pressed:'+key);
+    }
+}
+
+Game.prototype.show_hint = function () {
+    this.cheat_mode = true;
+    var p = b.get_all_possible_moves(1);
+
+    if (p.length === 0) {
+        alert('no more moves!');
+    } else {
+        b.draw_path(p[0]);
+    }
+}
+
 Game.prototype.xhtml_embed_callback = function (self) {
     var embed = document.getElementById('tileset');
     try {
@@ -585,10 +609,6 @@ Game.prototype.xhtml_embed_callback = function (self) {
         alert('getSVGDocument interface not available. Try some other browser.');
     }
     
-    if (svgdoc && svgdoc.defaultView) {
-        svgwin = svgdoc.defaultView; 
-    }
-
     my_log('start board init');
     self.board_init();
 }
@@ -658,9 +678,18 @@ Game.prototype.board_init = function () {
     b.init();
 }
 
-Game.prototype.init = function () {
-    var t = document.getElementsByTagName("html");
+Game.prototype.reset = function () {
+    this.cheat_mode = false;
+    this.started_at = null;
+}
 
+Game.prototype.init = function () {
+    document.onkeydown = this.keyhandler;
+    document.onkeyup = this.keyhandler;
+
+    this.reset()
+
+    var t = document.getElementsByTagName("html");
     if (t && t.length > 0) {
         this.xhtml_init()
     } else {
