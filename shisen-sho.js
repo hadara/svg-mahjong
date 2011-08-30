@@ -183,6 +183,7 @@ Board.prototype.tiles = new Array(
 
 Board.prototype.dom_board = null;
 Board.prototype.board = Array();
+Board.prototype._free_positions = Array();
 
 Board.prototype.previous_selection = null;
 
@@ -226,14 +227,9 @@ Board.prototype.draw_path = function(path) {
 }
 
 Board.prototype.get_random_free_position = function() {
-    while (1) {
-        var rand_x = Math.floor(Math.random()*this.width);
-        var rand_y = Math.floor(Math.random()*this.height);
-        // FIXME: do it more intelligently
-        if (this.board[rand_y][rand_x] === null) {
-            return Array(rand_x, rand_y);
-        }
-    }
+    var freelist = this._free_positions;
+    var fpos = Math.floor(Math.random()*this._free_positions.length);
+    return this._free_positions.splice(fpos, 1)[0];
 }
 
 Board.prototype.translate_to_position = function(elem, x, y) {
@@ -251,18 +247,24 @@ Board.prototype.position_tile = function(t) {
     t.set_board_pos(t, coords[0], coords[1]);
 }
 
-Board.prototype.init = function() {
-    var i, tlen;
-    var x=0, y=0;
+Board.prototype.construct_board = function() {
+    var poslist = Array();
 
     for (var i=0; i<this.height; i++) {
         var tmp_ar = Array();
         for (var j=0; j<this.width; j++) {
-            tmp_ar.push(null);
+            poslist.push(Array(j, i));
         }
         this.board.push(tmp_ar);
     }
+    this._free_positions = poslist;
+}
 
+Board.prototype.init = function() {
+    var i, tlen;
+    var x=0, y=0;
+
+    this.construct_board();
     this.dom_board = document.getElementById('hgameboard');
     svgroot = this.dom_board;
 
@@ -277,16 +279,13 @@ Board.prototype.init = function() {
         my_log('positioning done');
     }
 
-    //var orig_tileset = document.getElementById('orig_tileset');
-    //if (orig_tileset) {
-    //    orig_tileset.setAttribute('style', 'display: none');
-    //}
-
 }
 
 Board.prototype.get_all_possible_moves = function(limit) {
-    /* FIXME: document */
+    /* get all the possible move paths or up to the specified limit
+     */
     var moves = Array();
+
     for (var i=0; i<this.width; i++) {
         for (var j=0; j<this.height; j++) {
             if (this.board[j][i] !== null) {
@@ -294,6 +293,7 @@ Board.prototype.get_all_possible_moves = function(limit) {
             }
         }
     }
+
     return moves;
 }
 
@@ -505,7 +505,6 @@ Board.prototype.remove_tile = function (tile) {
      */
     var master_anim = document.getElementById('tile_hide_effect');
     var anim = master_anim.cloneNode(false);
-    console.log(tile.dom_ref.getAttribute('id'));
     anim.setAttributeNS(XLINKNS, 'href', '#'+tile.dom_ref.getAttribute('id'));
     svgroot.appendChild(anim);
     tile.anim = anim;
