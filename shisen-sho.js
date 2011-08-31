@@ -227,16 +227,20 @@ Board.prototype.draw_path = function(path) {
     var path_elem = document.createElementNS(SVGNS, "path");
     var h = Tile.prototype.height;
     var w = Tile.prototype.width;
+
+    // draw the line through tile centres all along the path
     path_str = "M "+(((path[0].x)*w)+w/2)+" "+(((path[0].y+1)*h)+h/2);
     for (var i=1; i<path.length; i++) {
         path_str += " L "+(((path[i].x)*w)+w/2)+" "+(((path[i].y+1)*h)+h/2);
     }
+    // FIXME: create template for the path element in the container file
+    // and add class too so CSS could be used for styling 
     path_elem.setAttribute("d", path_str);
     path_elem.setAttribute("fill", "none");
     path_elem.setAttribute("stroke", "red");
     path_elem.setAttribute("stroke-width", "3");
     svgroot.appendChild(path_elem);
-    setTimeout(function() { svgroot.removeChild(path_elem) }, 500);
+    setTimeout(function() { svgroot.removeChild(path_elem) }, 400);
 }
 
 Board.prototype.get_random_free_position = function() {
@@ -528,6 +532,12 @@ Board.prototype.remove_tile = function (tile) {
      */
     var master_anim = document.getElementById('tile_hide_effect');
     var anim = master_anim.cloneNode(false);
+    if (!anim) {
+        // probably no SMIL support, just hide the tile right away
+        b.remove_element_from_board(tile.dom_ref);
+        return;
+    }
+
     anim.setAttributeNS(XLINKNS, 'href', '#'+tile.dom_ref.getAttribute('id'));
     svgroot.appendChild(anim);
     tile.anim = anim;
@@ -575,6 +585,42 @@ Board.prototype.create_use = function () {
     use = document.createElementNS(SVGNS, "use");
     return use;
 }
+
+function Clock() {
+    // clock that measures how long you have played
+}
+
+Clock.prototype.init = function () {
+    this.clock_dom_ref = document.getElementById('clock');
+    this.reset();
+}
+
+Clock.prototype.reset = function () {
+    this.start_time = new Date();
+}
+
+Clock.prototype.timer_callback = function () {
+    var timediff_ms = new Date() - this.start_time;
+    var seconds = parseInt(timediff_ms/1000, 10);
+    var minutes = parseInt(seconds/60, 10);
+    seconds = parseInt(seconds%60, 10)
+    if (seconds < 10) {
+        seconds = '0'+seconds;
+    }
+    if (minutes < 10) {
+        minutes = '0'+minutes;
+    }
+    var timestr = minutes+":"+seconds;
+    this.clock_dom_ref.textContent = timestr;
+    var self = this;
+    setTimeout(function() { self.timer_callback() }, 1000);
+}
+
+Clock.prototype.start = function () {
+    this.timer_callback();
+}
+
+
 
 function Game() {
 }
@@ -680,10 +726,13 @@ Game.prototype.import_tileset = function (cb) {
 }
 
 Game.prototype.board_init = function () {
+    /* called after the tileset has been loaded
+     */
     my_log('board init');
     this.b = new Board();
     b = this.b; // FIXME: get rid of it
     this.b.init();
+    this.clock.start();
 }
 
 Game.prototype.new_game = function () {
@@ -694,12 +743,16 @@ Game.prototype.new_game = function () {
 Game.prototype.reset = function () {
     this.cheat_mode = false;
     this.started_at = null;
+    this.clock.reset();
     // clear board & DOM
 }
 
 Game.prototype.init = function () {
     var self = this;
     document.onkeydown = function (e) { return self.keyhandler(e) };
+
+    this.clock = new Clock();
+    this.clock.init();
 
     this.reset();
 
