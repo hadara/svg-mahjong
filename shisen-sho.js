@@ -630,6 +630,7 @@ Game.prototype.cheat_mode = false;
 Game.prototype.started_at = null;
 Game.prototype.KEY_HINT = 72;
 Game.prototype.KEY_NEW = 78;
+Game.prototype.KEY_SETTINGS = 83;
 
 Game.prototype.keyhandler = function (evt) {
     key = evt.which;
@@ -637,6 +638,8 @@ Game.prototype.keyhandler = function (evt) {
         this.show_hint();
     } else if (key === game.KEY_NEW) {
         this.new_game();
+    } else if (key === game.KEY_SETTINGS) {
+        this.show_settings();
     } else {
         my_log('unknown key pressed:'+key);
     }
@@ -651,6 +654,15 @@ Game.prototype.show_hint = function () {
     } else {
         b.draw_path(p[0]);
     }
+}
+
+Game.prototype.show_settings = function () {
+    /* move dialog to the end of the DOM tree
+     * so it would actually be visible
+     */
+    var setting_dialog = document.getElementById('settings_dialog');
+    svgroot.removeChild(setting_dialog);
+    svgroot.appendChild(setting_dialog);
 }
 
 Game.prototype.xhtml_embed_callback = function () {
