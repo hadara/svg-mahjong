@@ -16,8 +16,6 @@ var TILESET = "default";
 
 var DEBUG = false;
 
-var svgdoc = null;
-
 var global_id = 0;
 var have_imported_tileset = false;
 
@@ -25,6 +23,111 @@ function my_log(s) {
     if (DEBUG === true && console !== undefined) {
         console.log(s);
     }
+}
+
+function ExternalSVG () {
+    /* class that deals with getting access to the elements
+     * in some external SVG file
+     */
+}
+
+ExternalSVG.prototype.init = function(filename, cb) {
+    this.filename = filename;
+    this.domref = null;
+    // FIXME: we should detect our container here and call the init function
+    // based on that knowledge
+    var t = document.getElementsByTagName("html");
+    if (t && t.length > 0) {
+        this.xhtml_init(cb)
+    } else {
+        this.svg_init();
+    }
+}
+
+ExternalSVG.prototype.get_use_for_elem = function(element_id) {
+    /* return a USE DOM object that references the element specified with element_id
+     */
+    var origtile = this.domref.getElementById(element_id);
+    var pos = getScreenBBox(origtile);
+    var bg = document.createElementNS(SVGNS, "use");
+    bg.setAttribute('x', -pos.x);
+    bg.setAttribute('y', -pos.y);
+    bg.setAttributeNS(XLINKNS, "href", this.filename+"#"+element_id);
+    return bg;
+}
+
+ExternalSVG.prototype.xhtml_init = function (cb) {
+    /* if our container is an XHTML file then create a new embed element in the DOM
+     * that we can use to get access to the DOM of the external SVG file
+     */
+    // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
+    // <embed id="tileset" onload="alert('embed');" src="artwork/default.svgz" width="0" height="0" type="image/svg+xml"></embed>
+    var e = document.createElement("embed");
+    // FIXME: generate dynamic name for this
+    e.setAttribute("id", "tileset");
+    e.setAttribute("src", TILESETS[TILESET]);
+    e.setAttribute("width", "0");
+    e.setAttribute("height", "0");
+    e.setAttribute("type", "image/svg+xml");
+    var self = this;
+    e.onload = function () { self.xhtml_embed_callback(cb) };
+    document.getElementsByTagName('body')[0].appendChild(e);
+}
+
+ExternalSVG.prototype.xhtml_embed_callback = function (cb) {
+    var embed = document.getElementById('tileset');
+
+    try {
+        this.domref = embed.getSVGDocument();
+    } catch(exception) {
+        alert('getSVGDocument interface not available. Try some other browser.');
+    }
+    
+    my_log('start board init');
+    if (cb !== undefined) {
+        cb();
+    }
+}
+
+ExternalSVG.prototype.svg_init = function () {
+    this.import_tileset(this.board_init);
+}
+
+ExternalSVG.prototype.import_tileset = function(cb) {
+    // we really shouldn't have to import anything from the tileset
+    // but there are different bugs & missing functionality in current SVG 
+    // implementations in the browsers
+    // which make it impossible to get access to the original elements
+    // dom tree just by using USE tag with external reference.
+    // webkit doesn't implement external references in the use tags
+    // firefox & opera do not seem to implement instanceRoot attribute for the USE elements
+    function fetchXML  (url, callback) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onreadystatechange = function (evt) {
+        //Do not explicitly handle errors, those should be
+        //visible via console output in the browser.
+        if (xhr.readyState === 4) {
+            callback(xhr.responseXML);
+        }
+        };
+        xhr.send(null);
+    };
+
+    //fetch the document
+    fetchXML(TILESETS[TILESET],function(newSVGDoc){
+        //import it into the current DOM
+        var n = document.importNode(newSVGDoc.documentElement, true);
+        n.setAttribute('x', -1000);
+        //n.setAttribute('y', 0);
+        //n.setAttribute('viewBox', "0 0 900 900");
+        n.setAttribute('id', 'orig_tileset');
+        // everything will be in our tree so just use DOM
+        this.domref = document;
+        document.documentElement.appendChild(n);
+        have_imported_tileset = true;
+        cb();
+    }) 
 }
 
 function Tile(name) {
@@ -61,26 +164,13 @@ Tile.prototype.create_background = function() {
     return r;
 }
 
-//Tile.prototype.initial_positioning = function(self) {
-//    var pos = getScreenBBox(self.dom_ref);
-//    console.log(pos.x+" "+pos.y);
-//    //self.dom_ref.setAttribute('x', -pos.x);
-//    //self.dom_ref.setAttribute('y', -pos.y);
-//}
-
 Tile.prototype.create_g = function() {
     g = document.createElementNS(SVGNS, "g");
     return g;
 }
 
 Tile.prototype.get_bg = function() {
-    var origtile = svgdoc.getElementById("TILE_2");
-    var pos = getScreenBBox(origtile);
-    var bg = document.createElementNS(SVGNS, "use");
-    bg.setAttribute('x', -pos.x);
-    bg.setAttribute('y', -pos.y);
-    bg.setAttributeNS(XLINKNS, "href", TILESETS[TILESET]+"#TILE_2");
-    return bg;
+    return game.tileset.get_use_for_elem("TILE_2");
 }
 
 Tile.prototype.create_dom_elem = function() {
@@ -89,29 +179,8 @@ Tile.prototype.create_dom_elem = function() {
     var bg = this.create_background();
     this.bg = bg;
 
-    var u = document.createElementNS(SVGNS, "use");
-    var t = svgdoc.getElementById(this.name);
-    if (t === undefined || t === null) {
-        alert("couldn't find element "+this.name);
-        return undefined;
-    }
+    var u = game.tileset.get_use_for_elem(this.name);
 
-    var bb = getScreenBBox(t);
-    u.setAttribute('x', -bb.x);
-    u.setAttribute('y', -bb.y);
-    my_log("orig tile coords: "+bb.x+" "+bb.y);
-    u.setAttribute('id', 'use_'+global_id);
-    global_id += 1;
-
-    if (have_imported_tileset) {
-        // our tileset is imported into our DOM
-        var tile_href = '#'+this.name;
-    } else {
-        // use external <use> reference
-        var tile_href =  TILESETS[TILESET]+'#'+this.name;
-    }
-
-    u.setAttributeNS(XLINKNS, "href", tile_href);
     g.appendChild(this.get_bg());
     g.appendChild(bg);
     g.appendChild(u);
@@ -628,6 +697,7 @@ function Game() {
 // has hints function been used?
 Game.prototype.cheat_mode = false;
 Game.prototype.started_at = null;
+Game.prototype.gravity = true;
 Game.prototype.KEY_HINT = 72;
 Game.prototype.KEY_NEW = 78;
 Game.prototype.KEY_SETTINGS = 83;
@@ -665,78 +735,6 @@ Game.prototype.show_settings = function () {
     svgroot.appendChild(setting_dialog);
 }
 
-Game.prototype.xhtml_embed_callback = function () {
-    var embed = document.getElementById('tileset');
-
-    try {
-        svgdoc = embed.getSVGDocument();
-    } catch(exception) {
-        alert('getSVGDocument interface not available. Try some other browser.');
-    }
-    
-    my_log('start board init');
-    this.board_init();
-}
-
-Game.prototype.xhtml_init = function () {
-    /* this hack gets access to the SVG artwork file through the embed element in the
-     * XHTML document
-     */
-    // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
-    // <embed id="tileset" onload="alert('embed');" src="artwork/default.svgz" width="0" height="0" type="image/svg+xml"></embed>
-    var e = document.createElement("embed");
-    e.setAttribute("id", "tileset");
-    e.setAttribute("src", TILESETS[TILESET]);
-    e.setAttribute("width", "0");
-    e.setAttribute("height", "0");
-    e.setAttribute("type", "image/svg+xml");
-    var self = this;
-    e.onload = function () { self.xhtml_embed_callback() };
-    document.getElementsByTagName('body')[0].appendChild(e);
-}
-
-Game.prototype.svg_init = function () {
-    // not much to do in the SVG case
-    this.import_tileset(this.board_init);
-}
-
-Game.prototype.import_tileset = function (cb) {
-    // we really shouldn't have to import anything from the tileset
-    // but there are different bugs & missing functionality in current SVG 
-    // implementations in the browsers
-    // which make it impossible to get access to the original elements
-    // dom tree just by using USE tag with external reference.
-    // webkit doesn't implement external references in the use tags
-    // firefox & opera do not seem to implement instanceRoot attribute for the USE elements
-    function fetchXML  (url, callback) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.onreadystatechange = function (evt) {
-        //Do not explicitly handle errors, those should be
-        //visible via console output in the browser.
-        if (xhr.readyState === 4) {
-            callback(xhr.responseXML);
-        }
-        };
-        xhr.send(null);
-    };
-
-    //fetch the document
-    fetchXML(TILESETS[TILESET],function(newSVGDoc){
-        //import it into the current DOM
-        var n = document.importNode(newSVGDoc.documentElement, true);
-        n.setAttribute('x', -1000);
-        //n.setAttribute('y', 0);
-        //n.setAttribute('viewBox', "0 0 900 900");
-        n.setAttribute('id', 'orig_tileset');
-        // everything will be in our tree so just use DOM
-        svgdoc = document;
-        document.documentElement.appendChild(n);
-        have_imported_tileset = true;
-        cb();
-    }) 
-}
-
 Game.prototype.board_init = function () {
     /* called after the tileset has been loaded
      */
@@ -744,6 +742,7 @@ Game.prototype.board_init = function () {
     this.b = new Board();
     b = this.b; // FIXME: get rid of it
     this.b.init();
+
     this.clock.start();
 }
 
@@ -761,19 +760,15 @@ Game.prototype.reset = function () {
 
 Game.prototype.init = function () {
     var self = this;
-    document.onkeydown = function (e) { return self.keyhandler(e) };
 
     this.clock = new Clock();
     this.clock.init();
 
     this.reset();
+    document.onkeydown = function (e) { return self.keyhandler(e) };
 
-    var t = document.getElementsByTagName("html");
-    if (t && t.length > 0) {
-        this.xhtml_init()
-    } else {
-        this.svg_init();
-    }
+    this.tileset = new ExternalSVG();
+    this.tileset.init(TILESETS[TILESET], this.board_init);
 }
 
 function init() {
