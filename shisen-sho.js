@@ -33,14 +33,15 @@ function ExternalSVG () {
 
 ExternalSVG.prototype.init = function(filename, cb) {
     this.filename = filename;
+    // will hold reference to the container of our tileset
     this.domref = null;
-    // FIXME: we should detect our container here and call the init function
-    // based on that knowledge
+
+    // detect out container type
     var t = document.getElementsByTagName("html");
     if (t && t.length > 0) {
         this.xhtml_init(cb)
     } else {
-        this.svg_init();
+        this.svg_init(cb);
     }
 }
 
@@ -89,8 +90,8 @@ ExternalSVG.prototype.xhtml_embed_callback = function (cb) {
     }
 }
 
-ExternalSVG.prototype.svg_init = function () {
-    this.import_tileset(this.board_init);
+ExternalSVG.prototype.svg_init = function (cb) {
+    this.import_tileset(cb);
 }
 
 ExternalSVG.prototype.import_tileset = function(cb) {
@@ -114,20 +115,68 @@ ExternalSVG.prototype.import_tileset = function(cb) {
         xhr.send(null);
     };
 
+    var self = this;
     //fetch the document
     fetchXML(TILESETS[TILESET],function(newSVGDoc){
         //import it into the current DOM
         var n = document.importNode(newSVGDoc.documentElement, true);
-        n.setAttribute('x', -1000);
+        //n.setAttribute('x', -10000);
         //n.setAttribute('y', 0);
         //n.setAttribute('viewBox', "0 0 900 900");
         n.setAttribute('id', 'orig_tileset');
+        //n.setAttribute('visibility', 'hidden');
         // everything will be in our tree so just use DOM
-        this.domref = document;
-        document.documentElement.appendChild(n);
+        self.domref = document;
         have_imported_tileset = true;
+        self.copy_defs(newSVGDoc, document.documentElement);
+        //n.addEventListener('load', function() { alert('called') }, false);
+        //var tgt = document.documentElement;
+        var tgt = document.getElementById('tileset_internal');
+        self.copy_element_to_our_defs(newSVGDoc, tgt);
+        svgroot = document.documentElement;
+        //document.documentElement.appendChild(n);
+        //self.reposition_elements();
+        //document.documentElement.appendChild(n);
+        //setTimeout(function () { cb() }, 4000);
         cb();
     }) 
+}
+
+ExternalSVG.prototype.reposition_elements = function () {
+    for (var i=0; i<Board.prototype.tiles.length; i++) {
+        var element_id = Board.prototype.tiles[i];
+        var e = document.getElementById(element_id);
+        var bx = e.getBBox();
+        //var bx = getScreenBBox(e);
+        e.setAttribute('transform', 'translate('+(-bx.x)+', '+(-bx.y)+')');
+        //e.setAttribute('transform', 'scale(-0.3)');
+    }
+}
+
+ExternalSVG.prototype.copy_defs = function (origdom, targetdom) {
+    var defs = origdom.getElementsByTagName('defs');
+    for (i=0; i<defs.length; i++) {
+        targetdom.appendChild(defs[i]);
+    }
+}
+
+ExternalSVG.prototype.copy_element_to_our_defs = function (origdom, targetdom) {
+    for (var i=0; i<Board.prototype.tiles.length; i++) {
+        var element_id = Board.prototype.tiles[i];
+        this.copy_element_to_dom(origdom, targetdom, element_id);
+    }
+
+    this.copy_element_to_dom(origdom, targetdom, "TILE_2");
+}
+
+ExternalSVG.prototype.copy_element_to_dom = function (origdom, targetdom, element_id) {
+    var e = origdom.getElementById(element_id);
+    if (!e) {
+        return null;
+    }
+    targetdom.appendChild(e);
+    //var bx = getScreenBBox(e);
+    //e.setAttribute('transform', 'translate('+(-bx.x)+', '+(-bx.y)+')');
 }
 
 function Tile(name) {
@@ -768,7 +817,7 @@ Game.prototype.init = function () {
     document.onkeydown = function (e) { return self.keyhandler(e) };
 
     this.tileset = new ExternalSVG();
-    this.tileset.init(TILESETS[TILESET], this.board_init);
+    this.tileset.init(TILESETS[TILESET], function () { self.board_init(); });
 }
 
 function init() {
