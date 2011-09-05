@@ -137,7 +137,7 @@ ExternalSVG.prototype.import_tileset = function(cb) {
         //document.documentElement.appendChild(n);
         //self.reposition_elements();
         //document.documentElement.appendChild(n);
-        //setTimeout(function () { cb() }, 4000);
+        //setTimeout(function () { cb() }, 2000);
         cb();
     }) 
 }
@@ -239,7 +239,11 @@ Tile.prototype.create_dom_elem = function() {
     var self = this;
     g.onclick = function () { b.tile_selected(self); };
     if (DEBUG) {
-        g.onmousedown = function (e) { if (e.which != 1) { b.remove_tile(self); return true;} };
+        g.onmousedown = function (e) { 
+            if (e.which != 1) { 
+                b.remove_tile(self); return true;
+            } 
+        };
     }
     this.dom_ref = g;
     return g;
@@ -321,7 +325,8 @@ Board.prototype.previous_selection = null;
 Board.prototype.height = 8;
 Board.prototype.width = 18;
 
-Board.prototype.Y_PADDING = 100;
+Board.prototype.PADDING_TOP = 100;
+Board.prototype.PADDING_LEFT = 100;
 
 Board.prototype.get_tile_by_name = function(name) {
     return new Tile(name);
@@ -347,10 +352,17 @@ Board.prototype.draw_path = function(path) {
     var w = Tile.prototype.width;
 
     // draw the line through tile centres all along the path
-    path_str = "M "+(((path[0].x)*w)+w/2)+" "+(((path[0].y+1)*h)+h/2);
-    for (var i=1; i<path.length; i++) {
-        path_str += " L "+(((path[i].x)*w)+w/2)+" "+(((path[i].y+1)*h)+h/2);
+    for (var i=0; i<path.length; i++) {
+        if (i === 0) {
+            var cmd = 'M';
+        } else {
+            var cmd = 'L';
+        }
+        var x = this.PADDING_TOP+(((path[i].x)*w)+w/2);
+        var y = ((path[i].y+1)*h)+h/2;
+        path_str += cmd+" "+x+" "+y;
     }
+
     // FIXME: create template for the path element in the container file
     // and add class too so CSS could be used for styling 
     path_elem.setAttribute("d", path_str);
@@ -375,7 +387,9 @@ Board.prototype.translate_to_position = function(elem, x, y) {
 Board.prototype.position_tile = function(t) {
     var coords = this.get_random_free_position();
     this.board[coords[1]][coords[0]] = t;
-    this.translate_to_position(t.dom_ref, coords[0]*t.width, this.Y_PADDING+(coords[1]*t.height));
+    var x = this.PADDING_LEFT + (coords[0] * t.width);
+    var y = this.PADDING_TOP + (coords[1] * t.height);
+    this.translate_to_position(t.dom_ref, x, y);
     t.set_board_pos(coords[0], coords[1]);
 }
 
