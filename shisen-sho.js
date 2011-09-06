@@ -199,7 +199,7 @@ Tile.prototype.set_board_pos = function(x, y) {
 }
 
 Tile.prototype.create_background = function() {
-    /* creates full transparent rect that is as wide as the tile so we have
+    /* creates fully transparent rect that is as wide as the tile so we have
      * something that covers 100% of the area and will be able to catch 
      * all the clicks because of that
      */
@@ -219,7 +219,12 @@ Tile.prototype.create_g = function() {
 }
 
 Tile.prototype.get_bg = function() {
-    return game.tileset.get_use_for_elem("TILE_2");
+    var t = game.tileset.get_use_for_elem("TILE_2");
+    // FIXME: investigate why bg tiles are offset to the left in Ekioh
+    if (navigator.userAgent.indexOf('Ekioh') != -1) {
+        t.setAttribute('x', -192); // t.getAttribute('x'));
+    }
+    return t;
 }
 
 Tile.prototype.create_dom_elem = function() {
@@ -760,10 +765,16 @@ function Game() {
 // has hints function been used?
 Game.prototype.cheat_mode = false;
 Game.prototype.started_at = null;
+Game.prototype.curfocus = null;
 Game.prototype.gravity = true;
 Game.prototype.KEY_HINT = 72;
 Game.prototype.KEY_NEW = 78;
 Game.prototype.KEY_SETTINGS = 83;
+Game.prototype.KEY_RIGHT = 39;
+Game.prototype.KEY_UP = 38;
+Game.prototype.KEY_LEFT = 37;
+Game.prototype.KEY_DOWN = 40;
+Game.prototype.KEY_OK = 13;
 
 Game.prototype.keyhandler = function (evt) {
     key = evt.which;
@@ -773,9 +784,70 @@ Game.prototype.keyhandler = function (evt) {
         this.new_game();
     } else if (key === game.KEY_SETTINGS) {
         this.show_settings();
+    } else if (key === game.KEY_RIGHT) {
+        this.focus(1, 0);
+    } else if (key === game.KEY_UP) {
+        this.focus(0, -1);
+    } else if (key === game.KEY_LEFT) {
+        this.focus(-1, 0);
+    } else if (key === game.KEY_DOWN) {
+        this.focus(0, 1);
+    } else if (key === game.KEY_OK) {
+        this.select_focused();
     } else {
         my_log('unknown key pressed:'+key);
     }
+}
+
+Game.prototype.select_focused = function () {
+    if (this.curfocus === null) {
+        return false;
+    }
+    this.b.tile_selected(this.b.board[this.curfocus[1]][this.curfocus[0]]);
+}
+
+Game.prototype.focus = function (x, y) {
+    if (this.curfocus === null) {
+        this.curfocus = Array(0, 0);
+        this.init_focusbox();
+        this.draw_focus();
+        return;
+    }
+
+    this.curfocus[0] += x;
+    this.curfocus[1] += y;
+
+    if (this.curfocus[0] > this.b.width) {
+        this.curfocus[0] = 0;
+    } else if (this.curfocus[0] < 0) {
+        this.curfocus[0] = this.b.width;
+    }
+
+    if (this.curfocus[1] > this.b.height) {
+        this.curfocus[1] = 0;
+    } else if (this.curfocus[1] < 0) {
+        this.curfocus[1] = this.b.height;
+    }
+
+    this.draw_focus();
+}
+
+Game.prototype.draw_focus = function () {
+    if (this.curfocus === null) {
+        return;
+    }
+
+    var fb = document.getElementById('focusbox');
+    var bbox = getScreenBBox(fb);
+    var x = this.b.PADDING_LEFT + (this.curfocus[0] * bbox.width);
+    var y = this.b.PADDING_TOP + (this.curfocus[1] * bbox.height);
+    this.b.translate_to_position(fb, x, y);
+}
+
+Game.prototype.init_focusbox = function () {
+    var fb = document.getElementById('focusbox_template');
+    fb.setAttribute('id', 'focusbox');
+    svgroot.appendChild(fb);
 }
 
 Game.prototype.show_hint = function () {
