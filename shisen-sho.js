@@ -3,6 +3,7 @@
  * Licence: GPLv3
  * Artwork is taken from the KDE project and is under respective copyrights & licences
  */
+"use strict";
 
 var SVGNS = "http://www.w3.org/2000/svg";
 var XLINKNS = "http://www.w3.org/1999/xlink";
@@ -17,6 +18,8 @@ var TILESET = "default";
 var DEBUG = false;
 
 var global_id = 0;
+
+var game = null;
 
 function Tile(name) {
     this.name = name;
@@ -42,7 +45,7 @@ Tile.prototype.create_background = function() {
      * something that covers 100% of the area and will be able to catch 
      * all the clicks because of that
      */
-    r = document.createElementNS(SVGNS, "rect");
+    var r = document.createElementNS(SVGNS, "rect");
     r.setAttribute("x", 0);
     r.setAttribute("y", 0);
     r.setAttribute("height", this.height);
@@ -53,7 +56,7 @@ Tile.prototype.create_background = function() {
 }
 
 Tile.prototype.create_g = function() {
-    g = document.createElementNS(SVGNS, "g");
+    var g = document.createElementNS(SVGNS, "g");
     return g;
 }
 
@@ -715,7 +718,6 @@ Game.prototype.board_init = function () {
      */
     my_log('board init');
     this.b = new Board();
-    b = this.b; // FIXME: get rid of it
     this.b.init();
 
     this.clock.start();
