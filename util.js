@@ -77,3 +77,9 @@ function getScreenBBox(e) {
         return getScreenBBox_impl(e);
     }
 }
+
+function my_log(s) {
+    if (DEBUG === true && console !== undefined) {
+        console.log(s);
+    }
+}

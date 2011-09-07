@@ -17,183 +17,6 @@ var TILESET = "default";
 var DEBUG = false;
 
 var global_id = 0;
-var have_imported_tileset = false;
-
-function my_log(s) {
-    if (DEBUG === true && console !== undefined) {
-        console.log(s);
-    }
-}
-
-function ExternalSVG () {
-    /* class that deals with getting access to the elements
-     * in some external SVG file
-     */
-}
-
-ExternalSVG.prototype.init = function(filename, cb) {
-    this.filename = filename;
-    // will hold reference to the container of our tileset
-    this.domref = null;
-
-    // detect out container type
-    var t = document.getElementsByTagName("html");
-    if (t && t.length > 0) {
-        this.xhtml_init(cb)
-    } else {
-        this.svg_init(cb);
-    }
-}
-
-ExternalSVG.prototype.get_use_for_elem = function(element_id) {
-    /* return a USE DOM object that references the element specified with element_id
-     */
-    var origtile = this.domref.getElementById(element_id);
-    var pos = getScreenBBox(origtile);
-    //console.log(element_id+":"+pos.height+"x"+pos.width);
-    var bg = document.createElementNS(SVGNS, "use");
-    bg.setAttribute('x', -pos.x);
-    bg.setAttribute('y', -pos.y);
-    bg.setAttributeNS(XLINKNS, "href", this.filename+"#"+element_id);
-    return bg;
-}
-
-ExternalSVG.prototype.xhtml_init = function (cb) {
-    /* if our container is an XHTML file then create a new embed element in the DOM
-     * that we can use to get access to the DOM of the external SVG file
-     */
-    // see http://w3.org/TR/SVG11/struct.html#InterfaceGetSVGDocument
-    // <embed id="tileset" onload="alert('embed');" src="artwork/default.svgz" width="0" height="0" type="image/svg+xml"></embed>
-    var e = document.createElement("embed");
-    // FIXME: generate dynamic name for this
-    e.setAttribute("id", "tileset");
-    e.setAttribute("src", TILESETS[TILESET]);
-    e.setAttribute("width", "0");
-    e.setAttribute("height", "0");
-    e.setAttribute("type", "image/svg+xml");
-    var self = this;
-    e.onload = function () { self.xhtml_embed_callback(cb) };
-    document.getElementsByTagName('body')[0].appendChild(e);
-}
-
-ExternalSVG.prototype.xhtml_embed_callback = function (cb) {
-    var embed = document.getElementById('tileset');
-
-    try {
-        this.domref = embed.getSVGDocument();
-    } catch(exception) {
-        alert('getSVGDocument interface not available. Try some other browser.');
-    }
-    
-    my_log('start board init');
-    if (cb !== undefined) {
-        cb();
-    }
-}
-
-ExternalSVG.prototype.svg_init = function (cb) {
-    this.import_tileset(cb);
-}
-
-ExternalSVG.prototype.import_tileset = function(cb) {
-    // we really shouldn't have to import anything from the tileset
-    // but there are different bugs & missing functionality in current SVG 
-    // implementations in the browsers
-    // which make it impossible to get access to the original elements
-    // dom tree just by using USE tag with external reference.
-    // webkit doesn't implement external references in the use tags
-    // firefox & opera do not seem to implement instanceRoot attribute for the USE elements
-    function fetchXML  (url, callback) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
-        xhr.onreadystatechange = function (evt) {
-        //Do not explicitly handle errors, those should be
-        //visible via console output in the browser.
-        if (xhr.readyState === 4) {
-            callback(xhr.responseXML);
-        }
-        };
-        xhr.send(null);
-    };
-
-    var self = this;
-    //fetch the document
-    fetchXML(TILESETS[TILESET],function(newSVGDoc){
-        //import it into the current DOM
-        var n = document.importNode(newSVGDoc.documentElement, true);
-        //n.setAttribute('x', -10000);
-        //n.setAttribute('y', 0);
-        //n.setAttribute('viewBox', "0 0 900 900");
-        n.setAttribute('id', 'orig_tileset');
-        //n.setAttribute('visibility', 'hidden');
-        // everything will be in our tree so just use DOM
-        self.domref = document;
-        have_imported_tileset = true;
-        self.copy_defs(newSVGDoc, document.documentElement);
-        //n.addEventListener('load', function() { alert('called') }, false);
-        //var tgt = document.documentElement;
-        var tgt = document.getElementById('tileset_internal');
-        self.copy_element_to_our_defs(newSVGDoc, tgt);
-        self.hide_elements(tgt);
-        svgroot = document.documentElement;
-        //document.documentElement.appendChild(n);
-        //self.reposition_elements();
-        //document.documentElement.appendChild(n);
-        //setTimeout(function () { cb() }, 2000);
-        cb();
-    }) 
-}
-
-ExternalSVG.prototype.reposition_elements = function () {
-    for (var i=0; i<Board.prototype.tiles.length; i++) {
-        var element_id = Board.prototype.tiles[i];
-        var e = document.getElementById(element_id);
-        var bx = e.getBBox();
-        //var bx = getScreenBBox(e);
-        e.setAttribute('transform', 'translate('+(-bx.x)+', '+(-bx.y)+')');
-        //e.setAttribute('transform', 'scale(-0.3)');
-    }
-}
-
-ExternalSVG.prototype.copy_defs = function (origdom, targetdom) {
-    var defs = origdom.getElementsByTagName('defs');
-    for (i=0; i<defs.length; i++) {
-        targetdom.appendChild(defs[i]);
-    }
-}
-
-ExternalSVG.prototype.copy_element_to_our_defs = function (origdom, targetdom) {
-    for (var i=0; i<Board.prototype.tiles.length; i++) {
-        var element_id = Board.prototype.tiles[i];
-        this.copy_element_to_dom(origdom, targetdom, element_id);
-    }
-
-    this.copy_element_to_dom(origdom, targetdom, "TILE_2");
-}
-
-ExternalSVG.prototype.copy_element_to_dom = function (origdom, targetdom, element_id) {
-    var e = origdom.getElementById(element_id);
-    if (!e) {
-        return null;
-    }
-    targetdom.appendChild(e);
-    //var bx = getScreenBBox(e);
-    //e.setAttribute('transform', 'translate('+(-bx.x)+', '+(-bx.y)+')');
-}
-
-ExternalSVG.prototype.hide_elements = function (root) {
-    /* recursivelly hide all the elements in the given tree
-     * useful for in the case when some of subelements in the original
-     * tileset have exclicit visibility=visible style rule
-     */
-    if (root.children === undefined) {
-        return;
-    }
-    for (var i=0; i<root.children.length; i++) {
-        this.hide_elements(root.children[i]);
-    }
-    root.style.visibility = "hidden";
-}
 
 function Tile(name) {
     this.name = name;
@@ -919,7 +742,14 @@ Game.prototype.init = function () {
     this.reset();
     document.onkeydown = function (e) { return self.keyhandler(e) };
 
-    this.tileset = new ExternalSVG();
+    var t = document.getElementsByTagName("html");
+    if (t && t.length > 0) {
+        this.tileset = new EmbedTagExternalTileset();
+    } else {
+        //this.tileset = new XHRExternalDirectSVG();
+        this.tileset = new XHRExternalCopySVG();
+    }
+
     this.tileset.init(TILESETS[TILESET], function () { self.board_init(); });
 }
 
