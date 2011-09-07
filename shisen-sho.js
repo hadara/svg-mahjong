@@ -50,6 +50,7 @@ ExternalSVG.prototype.get_use_for_elem = function(element_id) {
      */
     var origtile = this.domref.getElementById(element_id);
     var pos = getScreenBBox(origtile);
+    //console.log(element_id+":"+pos.height+"x"+pos.width);
     var bg = document.createElementNS(SVGNS, "use");
     bg.setAttribute('x', -pos.x);
     bg.setAttribute('y', -pos.y);
@@ -133,6 +134,7 @@ ExternalSVG.prototype.import_tileset = function(cb) {
         //var tgt = document.documentElement;
         var tgt = document.getElementById('tileset_internal');
         self.copy_element_to_our_defs(newSVGDoc, tgt);
+        self.hide_elements(tgt);
         svgroot = document.documentElement;
         //document.documentElement.appendChild(n);
         //self.reposition_elements();
@@ -177,6 +179,20 @@ ExternalSVG.prototype.copy_element_to_dom = function (origdom, targetdom, elemen
     targetdom.appendChild(e);
     //var bx = getScreenBBox(e);
     //e.setAttribute('transform', 'translate('+(-bx.x)+', '+(-bx.y)+')');
+}
+
+ExternalSVG.prototype.hide_elements = function (root) {
+    /* recursivelly hide all the elements in the given tree
+     * useful for in the case when some of subelements in the original
+     * tileset have exclicit visibility=visible style rule
+     */
+    if (root.children === undefined) {
+        return;
+    }
+    for (var i=0; i<root.children.length; i++) {
+        this.hide_elements(root.children[i]);
+    }
+    root.style.visibility = "hidden";
 }
 
 function Tile(name) {
@@ -330,8 +346,8 @@ Board.prototype.previous_selection = null;
 Board.prototype.height = 8;
 Board.prototype.width = 18;
 
-Board.prototype.PADDING_TOP = 100;
-Board.prototype.PADDING_LEFT = 100;
+Board.prototype.PADDING_TOP = 60;
+Board.prototype.PADDING_LEFT = 60;
 
 Board.prototype.get_tile_by_name = function(name) {
     return new Tile(name);
@@ -363,10 +379,11 @@ Board.prototype.draw_path = function(path) {
         } else {
             var cmd = 'L';
         }
-        var x = this.PADDING_TOP+(((path[i].x)*w)+w/2);
-        var y = ((path[i].y+1)*h)+h/2;
+        var x = this.PADDING_LEFT+(((path[i].x)*w)+w/2);
+        var y = this.PADDING_TOP+((path[i].y)*h)+h/2;
         path_str += cmd+" "+x+" "+y;
     }
+    //console.log(path_str);
 
     // FIXME: create template for the path element in the container file
     // and add class too so CSS could be used for styling 
