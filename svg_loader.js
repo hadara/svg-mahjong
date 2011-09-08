@@ -3,6 +3,7 @@
  * Licence: GPLv3
  * Artwork is taken from the KDE project and is under respective copyrights & licences
  */
+"use strict";
 
 var SVGNS = "http://www.w3.org/2000/svg";
 var XLINKNS = "http://www.w3.org/1999/xlink";
@@ -148,7 +149,6 @@ XHRExternalDirectSVG.prototype.xml_parse_cb = function(newSVGDoc, cb){
     //n.addEventListener('load', function() { alert('called') }, false);
     //var tgt = document.documentElement;
     var tgt = document.getElementById('tileset_internal');
-    svgroot = document.documentElement;
     document.documentElement.appendChild(n);
     //self.reposition_elements();
     //setTimeout(function () { cb() }, 2000);
@@ -176,7 +176,6 @@ XHRExternalCopySVG.prototype.xml_parse_cb = function(newSVGDoc, cb){
     //var tgt = document.documentElement;
     //this.copy_element_to_our_defs(newSVGDoc, this.tgt);
     this.hide_elements(this.tgt);
-    svgroot = document.documentElement;
     cb();
 }
 
@@ -192,7 +191,7 @@ XHRExternalCopySVG.prototype.get_use_for_elem = function (element_id) {
 
 XHRExternalCopySVG.prototype.copy_defs = function (origdom, targetdom) {
     var defs = origdom.getElementsByTagName('defs');
-    for (i=0; i<defs.length; i++) {
+    for (var i=0; i<defs.length; i++) {
         targetdom.appendChild(defs[i]);
     }
 }

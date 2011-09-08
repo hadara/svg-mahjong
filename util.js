@@ -1,11 +1,12 @@
 // An implementation of getScreenBBox, by Antoine Quint
 // http://the.fuchsia-design.com/2006/12/getting-svg-elementss-full-bounding-box.html
+"use strict";
 
 function getScreenBBox_impl(element) {
 
   // macro to create an SVGPoint object
   function createPoint (x, y) {
-    var point = svgroot.createSVGPoint();
+    var point = document.svgroot.createSVGPoint();
     point.x = x;
     point.y = y;
     return point;
@@ -13,7 +14,7 @@ function getScreenBBox_impl(element) {
 
   // macro to create an SVGRect object
   function createRect (x, y, width, height) {
-    var rect = svgroot.createSVGRect();
+    var rect = document.svgroot.createSVGRect();
     rect.x = x;
     rect.y = y;
     rect.width = width;

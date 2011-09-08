@@ -217,8 +217,8 @@ Board.prototype.draw_path = function(path) {
     path_elem.setAttribute("fill", "none");
     path_elem.setAttribute("stroke", "red");
     path_elem.setAttribute("stroke-width", "3");
-    svgroot.appendChild(path_elem);
-    setTimeout(function() { svgroot.removeChild(path_elem) }, 400);
+    document.svgroot.appendChild(path_elem);
+    setTimeout(function() { document.svgroot.removeChild(path_elem) }, 400);
 }
 
 Board.prototype.get_random_free_position = function() {
@@ -272,7 +272,7 @@ Board.prototype.init = function() {
 
     this.construct_board();
     this.dom_board = document.getElementById('hgameboard');
-    svgroot = this.dom_board;
+    document.svgroot = this.dom_board;
 
     var element_pairs = (this.height*this.width)/2;
     for (i=0; i<element_pairs; i++) {
@@ -503,7 +503,7 @@ Board.prototype.cleanup_tile_animation = function (tile) {
     /* remove the tile and animation after the hide animation is finished
      */
     b.remove_element_from_board(tile.dom_ref);
-    svgroot.removeChild(tile.anim);
+    document.svgroot.removeChild(tile.anim);
     delete tile.anim;
 }
 
@@ -519,7 +519,7 @@ Board.prototype.remove_tile = function (tile) {
     }
 
     anim.setAttributeNS(XLINKNS, 'href', '#'+tile.dom_ref.getAttribute('id'));
-    svgroot.appendChild(anim);
+    document.svgroot.appendChild(anim);
     tile.anim = anim;
     anim.beginElement();
     var self = this;
@@ -690,7 +690,7 @@ Game.prototype.draw_focus = function () {
 Game.prototype.init_focusbox = function () {
     var fb = document.getElementById('focusbox_template');
     fb.setAttribute('id', 'focusbox');
-    svgroot.appendChild(fb);
+    document.svgroot.appendChild(fb);
 }
 
 Game.prototype.show_hint = function () {
@@ -709,8 +709,8 @@ Game.prototype.show_settings = function () {
      * so it would actually be visible
      */
     var setting_dialog = document.getElementById('settings_dialog');
-    svgroot.removeChild(setting_dialog);
-    svgroot.appendChild(setting_dialog);
+    document.svgroot.removeChild(setting_dialog);
+    document.svgroot.appendChild(setting_dialog);
 }
 
 Game.prototype.board_init = function () {
