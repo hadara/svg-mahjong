@@ -83,15 +83,6 @@ Tile.prototype.create_dom_elem = function() {
     g.setAttribute('id', 'tile_'+global_id);
     global_id += 1;
 
-    var self = this;
-    g.onclick = function () { b.tile_selected(self); };
-    if (DEBUG) {
-        g.onmousedown = function (e) { 
-            if (e.which != 1) { 
-                b.remove_tile(self); return true;
-            } 
-        };
-    }
     this.dom_ref = g;
     return g;
 }
@@ -239,6 +230,20 @@ Board.prototype.position_tile = function(t) {
     var y = this.PADDING_TOP + (coords[1] * t.height);
     this.translate_to_position(t.dom_ref, x, y);
     t.set_board_pos(coords[0], coords[1]);
+
+    // connect event handlers
+    // FIXME: this function isn't the logical sounding place
+    // for doing this but I have no better ideas ATM
+    var self = this;
+    t.dom_ref.onclick = function () { self.tile_selected(t); };
+    if (DEBUG) {
+        t.dom_ref.onmousedown = function (e) {
+            if (e.which != 1) {
+                self.remove_tile(t); return true;
+            }
+        };
+    }
+
 }
 
 Board.prototype.construct_board = function() {
@@ -312,7 +317,7 @@ Board.prototype.have_moves_left = function() {
 }
 
 Board.prototype.remove_element_from_board = function (e) {
-    b.translate_to_position(e, -200, -200);
+    this.translate_to_position(e, -200, -200);
 }
 
 Board.prototype.print_path = function (path) {
@@ -446,7 +451,7 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
         if ((tile_pos[0] >= 0 && tile_pos[0] < this.width) && 
             (tile_pos[1] >= 0 && tile_pos[1] < this.height)) {
             // is within the board
-            var tmp = b.board[tile_pos[1]][tile_pos[0]];
+            var tmp = this.board[tile_pos[1]][tile_pos[0]];
 
             if (tmp === null) {
                 // empty position
@@ -463,7 +468,6 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
             if ((tile_pos[0] >= -1 && tile_pos[0] <= this.width) &&
                 (tile_pos[1] >= -1 && tile_pos[1] <= this.height)) {
                 my_log('not on board tile pos: '+tile_pos[0]+' '+tile_pos[1]);
-                //var tmp = b.board[tile_pos[1]][tile_pos[0]];
                 var tmp = {'x': tile_pos[0], 'y': tile_pos[1]}
             } else {
                 // more than 1 step away from the board
@@ -484,7 +488,7 @@ Board.prototype.is_ok_to_pair = function (e1, e2) {
     }
 
     var paths = Array();
-    b.get_moves_from_tile(e1, Array(), paths, 1, e2);
+    this.get_moves_from_tile(e1, Array(), paths, 1, e2);
     for (var i=0; i<paths.length; i++) {
         var plast = paths[i][paths[i].length-1];
         // this should actually be the board element so
@@ -502,7 +506,7 @@ Board.prototype.is_ok_to_pair = function (e1, e2) {
 Board.prototype.cleanup_tile_animation = function (tile) {
     /* remove the tile and animation after the hide animation is finished
      */
-    b.remove_element_from_board(tile.dom_ref);
+    this.remove_element_from_board(tile.dom_ref);
     document.svgroot.removeChild(tile.anim);
     delete tile.anim;
 }
@@ -526,34 +530,34 @@ Board.prototype.remove_tile = function (tile) {
     // it would be far nicer to connect the animation cleanup with
     // animation onend event but that doesn't seem to be widely implemented
     setTimeout(function() { self.cleanup_tile_animation(tile) }, 1000);
-    b.board[tile.y][tile.x] = null;
+    this.board[tile.y][tile.x] = null;
 }
 
 Board.prototype.tile_selected = function (tile) {
-    if (tile === b.previous_selection) {
-        b.previous_selection.unhighlight();
-        b.previous_selection = null;
+    if (tile === this.previous_selection) {
+        this.previous_selection.unhighlight();
+        this.previous_selection = null;
         return;
     }
 
-    if (b.previous_selection !== null) {
+    if (this.previous_selection !== null) {
         /* we already have a tile selected */
-        if (tile.name === b.previous_selection.name && b.is_ok_to_pair(tile, b.previous_selection)) {
+        if (tile.name === this.previous_selection.name && this.is_ok_to_pair(tile, this.previous_selection)) {
             /* same tile type */
-            b.remove_tile(tile);
-            b.remove_tile(b.previous_selection);
-            b.previous_selection = null;
-            if (b.have_moves_left() === false) {
+            this.remove_tile(tile);
+            this.remove_tile(this.previous_selection);
+            this.previous_selection = null;
+            if (this.have_moves_left() === false) {
                 alert("No more moves!");
-                b.init();
+                this.init();
             }
         } else {
-            b.previous_selection.unhighlight();
-            b.previous_selection = null;
+            this.previous_selection.unhighlight();
+            this.previous_selection = null;
         }
     } else {
         tile.highlight();
-        b.previous_selection = tile;
+        this.previous_selection = tile;
     }
 }
 
@@ -620,7 +624,7 @@ Game.prototype.KEY_DOWN = 40;
 Game.prototype.KEY_OK = 13;
 
 Game.prototype.keyhandler = function (evt) {
-    key = evt.which;
+    var key = evt.which;
     if (key === game.KEY_HINT) {
         this.show_hint();
     } else if (key === game.KEY_NEW) {
