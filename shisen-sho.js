@@ -13,9 +13,13 @@ var TILESETS = {
     "default": "artwork/default.svg"
 };
 
+var BG_ELEMENT = "TILE_2";
+
 var TILESET = "default";
 
 var DEBUG = false;
+
+var VIEW_BOX_SIZE = "0 0 1280 720"
 
 var global_id = 0;
 
@@ -61,7 +65,7 @@ Tile.prototype.create_g = function() {
 }
 
 Tile.prototype.get_bg = function() {
-    var t = game.tileset.get_use_for_elem("TILE_2");
+    var t = game.tileset.get_use_for_elem(BG_ELEMENT);
     // FIXME: investigate why bg tiles are offset to the left in Ekioh
     if (navigator.userAgent.indexOf('Ekioh') != -1) {
         t.setAttribute('x', -192); // t.getAttribute('x'));
@@ -163,8 +167,10 @@ Board.prototype.previous_selection = null;
 Board.prototype.height = 8;
 Board.prototype.width = 18;
 
-Board.prototype.PADDING_TOP = 60;
-Board.prototype.PADDING_LEFT = 60;
+//Board.prototype.PADDING_TOP = 60;
+//Board.prototype.PADDING_LEFT = 60;
+Board.prototype.PADDING_TOP = 0;
+Board.prototype.PADDING_LEFT = 0;
 
 Board.prototype.get_tile_by_name = function(name) {
     return new Tile(name);
@@ -271,6 +277,10 @@ Board.prototype.lay_out_board = function() {
     }
 }
 
+Board.prototype.set_viewport = function(vsize) {
+    this.dom_board.setAttribute('viewBox', vsize);
+}
+
 Board.prototype.init = function() {
     var i, tlen;
     var x=0, y=0;
@@ -291,6 +301,11 @@ Board.prototype.init = function() {
     }
     this.lay_out_board();
 
+    var self = this;
+
+    if (VIEW_BOX_SIZE) {
+        setTimeout(function() { self.set_viewbox(VIEW_BOX_SIZE) }, 500);
+    }
 }
 
 Board.prototype.get_all_possible_moves = function(limit) {
@@ -686,14 +701,16 @@ Game.prototype.draw_focus = function () {
 
     var fb = document.getElementById('focusbox');
     var bbox = getScreenBBox(fb);
-    var x = this.b.PADDING_LEFT + (this.curfocus[0] * bbox.width);
-    var y = this.b.PADDING_TOP + (this.curfocus[1] * bbox.height);
+    var x = this.b.PADDING_LEFT + (this.curfocus[0] * Tile.prototype.width);
+    var y = this.b.PADDING_TOP + (this.curfocus[1] * Tile.prototype.height);
     this.b.translate_to_position(fb, x, y);
 }
 
 Game.prototype.init_focusbox = function () {
     var fb = document.getElementById('focusbox_template');
     fb.setAttribute('id', 'focusbox');
+    fb.setAttribute('height', Tile.prototype.height);
+    fb.setAttribute('width', Tile.prototype.width);
     document.svgroot.appendChild(fb);
 }
 
@@ -752,8 +769,8 @@ Game.prototype.init = function () {
     if (t && t.length > 0) {
         this.tileset = new EmbedTagExternalTileset();
     } else {
-        //this.tileset = new XHRExternalDirectSVG();
-        this.tileset = new XHRExternalCopySVG();
+        this.tileset = new XHRExternalDirectSVG();
+        //this.tileset = new XHRExternalCopySVG();
     }
 
     this.tileset.init(TILESETS[TILESET], function () { self.board_init(); });
