@@ -277,7 +277,7 @@ Board.prototype.lay_out_board = function() {
     }
 }
 
-Board.prototype.set_viewport = function(vsize) {
+Board.prototype.set_viewbox = function(vsize) {
     this.dom_board.setAttribute('viewBox', vsize);
 }
 
@@ -301,11 +301,11 @@ Board.prototype.init = function() {
     }
     this.lay_out_board();
 
-    var self = this;
-
     if (VIEW_BOX_SIZE) {
+        var self = this;
         setTimeout(function() { self.set_viewbox(VIEW_BOX_SIZE) }, 500);
     }
+    game.tileset.hide_elements();
 }
 
 Board.prototype.get_all_possible_moves = function(limit) {

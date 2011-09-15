@@ -32,10 +32,17 @@ ExternalSVG.prototype.init = function(filename, cb) {
     this.domref = null;
 }
 
+ExternalSVG.prototype.get_orig_domref_by_id = function(element_id) {
+    /* return reference to the element idenfitied by element_id in the original
+     * tileset DOM
+     */
+    return this.domref.getElementById(element_id);
+}
+
 ExternalSVG.prototype.get_use_for_elem = function(element_id) {
     /* return a USE DOM object that references the element specified with element_id
      */
-    var origtile = this.domref.getElementById(element_id);
+    var origtile = this.get_orig_domref_by_id(element_id);
     var pos = getScreenBBox(origtile);
     //console.log(element_id+":"+pos.height+"x"+pos.width);
     var bg = document.createElementNS(SVGNS, "use");
@@ -134,6 +141,33 @@ XHRExternalSVG.prototype.reposition_elements = function () {
     }
 }
 
+XHRExternalSVG.prototype.hide_elements = function (root) {
+    /* recursivelly hide all the elements in the given tree
+     * useful for in the case when some of subelements in the original
+     * tileset have exclicit visibility=visible style rule
+     */
+    if (root === undefined) {
+        root = this.origdom;
+    }
+
+    if (root.hasChildNodes !== undefined && root.hasChildNodes()) {
+        var children = root.childNodes;
+
+        for (var i=0; i<children.length; i++) {
+            this.hide_elements(children[i]);
+        }
+    }
+    //if (root.children === undefined) {
+    //    return;
+    //}
+    if (root.style !== undefined) {
+        root.style.visibility = "hidden";
+    } else if (root.setAttribute !== undefined) {
+        root.setAttribute('visibility', 'hidden');
+        root.setAttribute('display', 'none');
+    }
+}
+
 function XHRExternalDirectSVG() {};
 XHRExternalDirectSVG.prototype = new XHRExternalSVG;
 XHRExternalDirectSVG.prototype.constructor = XHRExternalDirectSVG;
@@ -144,15 +178,33 @@ XHRExternalDirectSVG.prototype.xml_parse_cb = function(newSVGDoc, cb){
     //import it into the current DOM
     var n = document.importNode(newSVGDoc.documentElement, true);
     n.setAttribute('id', 'orig_tileset');
+    n.setAttribute('visibility', 'hidden');
+    //this.hide_elements(n);
     // everything will be in our tree so just use DOM
     this.domref = document;
+    this.origdom = n;
     //n.addEventListener('load', function() { alert('called') }, false);
     //var tgt = document.documentElement;
     var tgt = document.getElementById('tileset_internal');
+    var wrapped_cb = function () { cb() };
+    // none of the following works :-P
+    n.onload = wrapped_cb
+    n.onsvgload = wrapped_cb
+    n.onreadystatechange = wrapped_cb
+    window.onsvgload = wrapped_cb
+    n.addEventListener("load", wrapped_cb, true);
+    n.addEventListener("onload", wrapped_cb, true);
+    n.addEventListener("svgload", wrapped_cb, true);
+    n.addEventListener("ready", wrapped_cb, true);
+    // other methods:
+    // - periodically checking if it's done
+    // - inject script with callback to the child DOM before appending it
+
     document.documentElement.appendChild(n);
     //self.reposition_elements();
-    //setTimeout(function () { cb() }, 2000);
-    cb();
+    //setTimeout(function () { cb() }, 500);
+    setTimeout(wrapped_cb, 500);
+    //cb();
 }
 
 function XHRExternalCopySVG() {};
@@ -171,6 +223,7 @@ XHRExternalCopySVG.prototype.xml_parse_cb = function(newSVGDoc, cb){
     n.setAttribute('id', 'orig_tileset');
     // everything will be in our tree so just use DOM
     this.domref = document;
+    this.origdom = n;
     this.copy_defs(newSVGDoc, document.documentElement);
     //n.addEventListener('load', function() { alert('called') }, false);
     //var tgt = document.documentElement;
@@ -215,16 +268,3 @@ XHRExternalCopySVG.prototype.copy_element_to_dom = function (origdom, targetdom,
     this.copied_elements[element_id] = true;
 }
 
-XHRExternalCopySVG.prototype.hide_elements = function (root) {
-    /* recursivelly hide all the elements in the given tree
-     * useful for in the case when some of subelements in the original
-     * tileset have exclicit visibility=visible style rule
-     */
-    if (root.children === undefined) {
-        return;
-    }
-    for (var i=0; i<root.children.length; i++) {
-        this.hide_elements(root.children[i]);
-    }
-    root.style.visibility = "hidden";
-}
