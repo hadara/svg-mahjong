@@ -160,6 +160,7 @@ Board.prototype.tiles = new Array(
 
 Board.prototype.dom_board = null;
 Board.prototype.board = Array();
+Board.prototype._tiles = Array();
 Board.prototype._free_positions = Array();
 
 Board.prototype.previous_selection = null;
@@ -171,7 +172,9 @@ Board.prototype.PADDING_TOP = 60;
 Board.prototype.PADDING_LEFT = 60;
 
 Board.prototype.get_tile_by_name = function(name) {
-    return new Tile(name);
+    var t = new Tile(name);
+    this._tiles.push(t);
+    return t;
 }
 
 Board.prototype.get_tile_pair = function(tile_name) {
@@ -282,6 +285,14 @@ Board.prototype.set_viewbox = function() {
     var iw = (Tile.prototype.width * this.width) + (this.PADDING_TOP*2);
     var tgt_size = "0 0 "+iw+" "+ih;
     this.dom_board.setAttribute('viewBox', tgt_size);
+}
+
+Board.prototype.clear_board = function() {
+    var len = this._tiles.length;
+    for (var i=0; i<len; i++) {
+        var e = this._tiles.pop()
+        this.dom_board.removeChild(e.dom_ref);
+    }
 }
 
 Board.prototype.init = function() {
@@ -747,12 +758,12 @@ Game.prototype.init_focusbox = function () {
 
 Game.prototype.show_hint = function () {
     this.cheat_mode = true;
-    var p = b.get_all_possible_moves(1);
+    var p = this.b.get_all_possible_moves(1);
 
     if (p.length === 0) {
         alert('no more moves!');
     } else {
-        b.draw_path(p[0]);
+        this.b.draw_path(p[0]);
     }
 }
 
@@ -777,6 +788,7 @@ Game.prototype.board_init = function () {
 
 Game.prototype.new_game = function () {
     this.reset();
+    this.b.clear_board();
     this.b.init();
 }
 

@@ -165,7 +165,7 @@ XHRExternalSVG.prototype.hide_elements = function (root) {
     //if (root.children === undefined) {
     //    return;
     //}
-    if (root.style !== undefined) {
+    if (root.style) {
         root.style.visibility = "hidden";
     } else if (root.setAttribute !== undefined) {
         root.setAttribute('visibility', 'hidden');
