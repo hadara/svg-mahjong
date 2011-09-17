@@ -52,6 +52,11 @@ ExternalSVG.prototype.get_use_for_elem = function(element_id) {
     return bg;
 }
 
+ExternalSVG.prototype.hide_elements = function(root) {
+    // NOOP
+    ; 
+}
+
 function EmbedTagExternalTileset() {}
 EmbedTagExternalTileset.prototype = new ExternalSVG;
 EmbedTagExternalTileset.prototype.constructor = EmbedTagExternalTileset;

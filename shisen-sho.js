@@ -19,7 +19,7 @@ var TILESET = "default";
 
 var DEBUG = false;
 
-var VIEW_BOX_SIZE = "0 0 1280 720"
+var WANT_VIEWBOX = true;
 
 var global_id = 0;
 
@@ -167,10 +167,8 @@ Board.prototype.previous_selection = null;
 Board.prototype.height = 8;
 Board.prototype.width = 18;
 
-//Board.prototype.PADDING_TOP = 60;
-//Board.prototype.PADDING_LEFT = 60;
-Board.prototype.PADDING_TOP = 0;
-Board.prototype.PADDING_LEFT = 0;
+Board.prototype.PADDING_TOP = 60;
+Board.prototype.PADDING_LEFT = 60;
 
 Board.prototype.get_tile_by_name = function(name) {
     return new Tile(name);
@@ -277,8 +275,13 @@ Board.prototype.lay_out_board = function() {
     }
 }
 
-Board.prototype.set_viewbox = function(vsize) {
-    this.dom_board.setAttribute('viewBox', vsize);
+Board.prototype.set_viewbox = function() {
+    /* dynamically set viewBox to the size of out board
+     */
+    var ih = (Tile.prototype.height * this.height) + (this.PADDING_LEFT*2);
+    var iw = (Tile.prototype.width * this.width) + (this.PADDING_TOP*2);
+    var tgt_size = "0 0 "+iw+" "+ih;
+    this.dom_board.setAttribute('viewBox', tgt_size);
 }
 
 Board.prototype.init = function() {
@@ -301,9 +304,9 @@ Board.prototype.init = function() {
     }
     this.lay_out_board();
 
-    if (VIEW_BOX_SIZE) {
+    if (WANT_VIEWBOX) {
         var self = this;
-        setTimeout(function() { self.set_viewbox(VIEW_BOX_SIZE) }, 500);
+        setTimeout(function() { self.set_viewbox() }, 500);
     }
     game.tileset.hide_elements();
 }
@@ -619,7 +622,35 @@ Clock.prototype.start = function () {
     this.timer_callback();
 }
 
+function Highscores () {
 
+}
+
+Highscores.prototype.KEY = 'svgshishen.highscores';
+
+Highscores.prototype.load = function () {
+    this._storage = window.localStorage;
+
+    var hs = this._storage[this.KEY];
+
+    if (hs !== null) {
+        this.hs = JSON.parse(hs);
+    } else {
+        this.hs = [];
+    }
+}
+
+Highscores.prototype.save = function () {
+    var s = JSON.stringify(this.hs)
+    this._storage[this.KEY] = s;
+}
+
+Highscores.prototype.set_highscore = function (time, name) {
+    this.hs.push({'time': time, 'name': name});
+    // keep it sorted
+    this.hs.sort(function(x, y) { y['time'] - x['time'] });
+    this.save();
+}
 
 function Game() {
 }

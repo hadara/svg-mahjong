@@ -23,7 +23,8 @@ function getScreenBBox_impl(element) {
   }
 
   // get the complete transformation matrix
-  var matrix = element.getScreenCTM();
+  //var matrix = element.getScreenCTM();
+  var matrix = element.getCTM();
   // get the bounding box of the target element
   var box = element.getBBox();
 
