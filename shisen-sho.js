@@ -319,7 +319,6 @@ Board.prototype.init = function() {
         var self = this;
         setTimeout(function() { self.set_viewbox() }, 500);
     }
-    game.tileset.hide_elements();
 }
 
 Board.prototype.get_all_possible_moves = function(limit) {
@@ -769,7 +768,8 @@ Game.prototype.show_hint = function () {
 
 Game.prototype.show_settings = function () {
     /* move dialog to the end of the DOM tree
-     * so it would actually be visible
+     * so it would actually be visible since it's drawn in the
+     * same order that it appears in the DOM
      */
     var setting_dialog = document.getElementById('settings_dialog');
     document.svgroot.removeChild(setting_dialog);

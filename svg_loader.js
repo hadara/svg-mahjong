@@ -39,6 +39,10 @@ ExternalSVG.prototype.get_orig_domref_by_id = function(element_id) {
     return this.domref.getElementById(element_id);
 }
 
+ExternalSVG.prototype.get_element_ref = function(element_id) {
+    return this.filename+"#"+element_id;
+}
+
 ExternalSVG.prototype.get_use_for_elem = function(element_id) {
     /* return a USE DOM object that references the element specified with element_id
      */
@@ -48,7 +52,7 @@ ExternalSVG.prototype.get_use_for_elem = function(element_id) {
     var bg = document.createElementNS(SVGNS, "use");
     bg.setAttribute('x', -pos.x);
     bg.setAttribute('y', -pos.y);
-    bg.setAttributeNS(XLINKNS, "href", this.filename+"#"+element_id);
+    bg.setAttributeNS(XLINKNS, "href", this.get_element_ref(element_id));
     return bg;
 }
 
@@ -105,6 +109,10 @@ XHRExternalSVG.prototype.constructor = XHRExternalSVG;
 XHRExternalSVG.prototype.init = function (filename, cb) {
     ExternalSVG.prototype.init.call(this, filename, cb);
     this.import_tileset(cb);
+}
+
+XHRExternalSVG.prototype.get_element_ref = function(element_id) {
+    return '#'+element_id;
 }
 
 XHRExternalSVG.prototype.import_tileset = function(cb) {
@@ -176,40 +184,35 @@ XHRExternalSVG.prototype.hide_elements = function (root) {
 function XHRExternalDirectSVG() {};
 XHRExternalDirectSVG.prototype = new XHRExternalSVG;
 XHRExternalDirectSVG.prototype.constructor = XHRExternalDirectSVG;
+/* place the tileset at this position on the canvas after loading
+ * usually it's not desirable to see the original tileset so this
+ * should probably be somewhere outside of the visisble
+ */
+XHRExternalDirectSVG.prototype.TILESET_POSITION = Array(-10000, -10000);
 
-XHRExternalDirectSVG.prototype.xml_parse_cb = function(newSVGDoc, cb){
+XHRExternalDirectSVG.prototype.get_use_for_elem = function(element_id) {
+    var use = XHRExternalSVG.prototype.get_use_for_elem.call(this, element_id);
+    use.setAttribute('x', use.x.animVal.value+this.TILESET_POSITION[0]);
+    use.setAttribute('y', use.y.animVal.value+this.TILESET_POSITION[1]);
+    return use;
+}
+
+XHRExternalDirectSVG.prototype.xml_parse_cb = function(newSVGDoc, cb) {
     /* just insert the whole guest svg tree into ours 
      */
     //import it into the current DOM
     var n = document.importNode(newSVGDoc.documentElement, true);
     n.setAttribute('id', 'orig_tileset');
-    n.setAttribute('visibility', 'hidden');
-    //this.hide_elements(n);
+    n.setAttribute('x', this.TILESET_POSITION[0]);
+    n.setAttribute('y', this.TILESET_POSITION[1]);
+
     // everything will be in our tree so just use DOM
     this.domref = document;
     this.origdom = n;
-    //n.addEventListener('load', function() { alert('called') }, false);
-    //var tgt = document.documentElement;
-    var tgt = document.getElementById('tileset_internal');
     var wrapped_cb = function () { cb() };
-    // none of the following works :-P
-    n.onload = wrapped_cb
-    n.onsvgload = wrapped_cb
-    n.onreadystatechange = wrapped_cb
-    window.onsvgload = wrapped_cb
-    n.addEventListener("load", wrapped_cb, true);
-    n.addEventListener("onload", wrapped_cb, true);
-    n.addEventListener("svgload", wrapped_cb, true);
-    n.addEventListener("ready", wrapped_cb, true);
-    // other methods:
-    // - periodically checking if it's done
-    // - inject script with callback to the child DOM before appending it
 
     document.documentElement.appendChild(n);
-    //self.reposition_elements();
-    //setTimeout(function () { cb() }, 500);
     setTimeout(wrapped_cb, 500);
-    //cb();
 }
 
 function XHRExternalCopySVG() {};
@@ -230,10 +233,6 @@ XHRExternalCopySVG.prototype.xml_parse_cb = function(newSVGDoc, cb){
     this.domref = document;
     this.origdom = n;
     this.copy_defs(newSVGDoc, document.documentElement);
-    //n.addEventListener('load', function() { alert('called') }, false);
-    //var tgt = document.documentElement;
-    //this.copy_element_to_our_defs(newSVGDoc, this.tgt);
-    this.hide_elements(this.tgt);
     cb();
 }
 
@@ -269,7 +268,6 @@ XHRExternalCopySVG.prototype.copy_element_to_dom = function (origdom, targetdom,
         return null;
     }
     targetdom.appendChild(e);
-    this.hide_elements(e);
     this.copied_elements[element_id] = true;
 }
 
