@@ -345,7 +345,7 @@ Board.prototype.have_moves_left = function() {
 }
 
 Board.prototype.remove_element_from_board = function (e) {
-    this.translate_to_position(e, -200, -200);
+    this.translate_to_position(e, -2000, -2000);
 }
 
 Board.prototype.print_path = function (path) {
@@ -546,18 +546,24 @@ Board.prototype.remove_tile = function (tile) {
     var anim = master_anim.cloneNode(false);
     if (!anim) {
         // probably no SMIL support, just hide the tile right away
-        b.remove_element_from_board(tile.dom_ref);
+        this.remove_element_from_board(tile.dom_ref);
         return;
     }
 
     anim.setAttributeNS(XLINKNS, 'href', '#'+tile.dom_ref.getAttribute('id'));
     document.svgroot.appendChild(anim);
     tile.anim = anim;
-    anim.beginElement();
+    // FIXME
+    // it would be far nicer to connect the animation cleanup with
+    // animation end event but that doesn't seem to be widely implemented
     var self = this;
+    anim.addEventListener('end', function() { self.cleanup_tile_animation(tile) },  false);
+    //anim.onend = function() { alert('onend'); self.cleanup_tile_animation(tile) };
+    setTimeout(function() { self.cleanup_tile_animation(tile) }, 1000);
+    anim.beginElement();
+
     // it would be far nicer to connect the animation cleanup with
     // animation onend event but that doesn't seem to be widely implemented
-    setTimeout(function() { self.cleanup_tile_animation(tile) }, 1000);
     this.board[tile.y][tile.x] = null;
 }
 
