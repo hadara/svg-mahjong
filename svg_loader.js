@@ -192,8 +192,8 @@ XHRExternalDirectSVG.prototype.TILESET_POSITION = Array(-10000, -10000);
 
 XHRExternalDirectSVG.prototype.get_use_for_elem = function(element_id) {
     var use = XHRExternalSVG.prototype.get_use_for_elem.call(this, element_id);
-    use.setAttribute('x', use.x.animVal.value+this.TILESET_POSITION[0]);
-    use.setAttribute('y', use.y.animVal.value+this.TILESET_POSITION[1]);
+    use.setAttribute('x', use.x.baseVal.value+this.TILESET_POSITION[0]);
+    use.setAttribute('y', use.y.baseVal.value+this.TILESET_POSITION[1]);
     return use;
 }
 
