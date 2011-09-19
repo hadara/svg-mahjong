@@ -543,12 +543,12 @@ Board.prototype.remove_tile = function (tile) {
     /* remove element from visual and internal boards
      */
     var master_anim = document.getElementById('tile_hide_effect');
-    var anim = master_anim.cloneNode(false);
-    if (!anim) {
+    if (!master_anim) {
         // probably no SMIL support, just hide the tile right away
         this.remove_element_from_board(tile.dom_ref);
         return;
     }
+    var anim = master_anim.cloneNode(false);
 
     anim.setAttributeNS(XLINKNS, 'href', '#'+tile.dom_ref.getAttribute('id'));
     document.svgroot.appendChild(anim);
