@@ -731,13 +731,13 @@ Game.prototype.focus = function (x, y) {
     if (this.curfocus[0] > this.b.width-1) {
         this.curfocus[0] = 0;
     } else if (this.curfocus[0] < 0) {
-        this.curfocus[0] = this.b.width;
+        this.curfocus[0] = this.b.width-1;
     }
 
     if (this.curfocus[1] > this.b.height-1) {
         this.curfocus[1] = 0;
     } else if (this.curfocus[1] < 0) {
-        this.curfocus[1] = this.b.height;
+        this.curfocus[1] = this.b.height-1;
     }
 
     this.draw_focus();
