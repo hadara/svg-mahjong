@@ -716,6 +716,8 @@ Game.prototype.select_focused = function () {
 }
 
 Game.prototype.focus = function (x, y) {
+    /* change focusbox position by offset 
+     */
     if (this.curfocus === null) {
         this.curfocus = Array(0, 0);
         this.init_focusbox();
@@ -726,13 +728,13 @@ Game.prototype.focus = function (x, y) {
     this.curfocus[0] += x;
     this.curfocus[1] += y;
 
-    if (this.curfocus[0] > this.b.width) {
+    if (this.curfocus[0] > this.b.width-1) {
         this.curfocus[0] = 0;
     } else if (this.curfocus[0] < 0) {
         this.curfocus[0] = this.b.width;
     }
 
-    if (this.curfocus[1] > this.b.height) {
+    if (this.curfocus[1] > this.b.height-1) {
         this.curfocus[1] = 0;
     } else if (this.curfocus[1] < 0) {
         this.curfocus[1] = this.b.height;
