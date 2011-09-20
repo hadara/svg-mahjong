@@ -754,17 +754,19 @@ function Game() {
 
 // has hints function been used?
 Game.prototype.cheat_mode = false;
+Game.prototype._autoplay_mode = false;
 Game.prototype.started_at = null;
 Game.prototype.curfocus = null;
 Game.prototype.gravity = true;
-Game.prototype.KEY_HINT = 72;
-Game.prototype.KEY_NEW = 78;
+Game.prototype.KEY_HINT = 72; // 'h'
+Game.prototype.KEY_AUTOPLAY = 65; // 'a'
+Game.prototype.KEY_NEW = 78; // 'n'
 Game.prototype.KEY_SETTINGS = 83;
 Game.prototype.KEY_RIGHT = 39;
 Game.prototype.KEY_UP = 38;
 Game.prototype.KEY_LEFT = 37;
 Game.prototype.KEY_DOWN = 40;
-Game.prototype.KEY_OK = 13;
+Game.prototype.KEY_OK = 13; // enter
 
 Game.prototype.keyhandler = function (evt) {
     var key = evt.which;
@@ -784,9 +786,45 @@ Game.prototype.keyhandler = function (evt) {
         this.focus(0, 1);
     } else if (key === game.KEY_OK) {
         this.select_focused();
+    } else if (key === game.KEY_AUTOPLAY) {
+        this.toggle_autoplay();
     } else {
         my_log('unknown key pressed:'+key);
     }
+}
+
+Game.prototype.toggle_autoplay = function () {
+    if (this._autoplay_mode) {
+        this._autoplay_mode = false;
+    } else {
+        this._autoplay_mode = true;
+        this.cheat_mode = true;
+        this.autoplay();
+    }
+}
+
+Game.prototype.autoplay = function () {
+    /* play game automatically, mainly useful as a screensaver and/or performance test
+     */
+    if (this._autoplay_mode === false) {
+        return;
+    }
+
+    var p = this.b.get_all_possible_moves(1);
+    if (!p) {
+        return this.new_game();
+    }
+    p = p[0];
+
+    var first_elem = p[0];
+    var last_elem = p[p.length-1];
+    var first_elem = this.b.board[first_elem.y][first_elem.x];
+    var last_elem = this.b.board[last_elem.y][last_elem.x];
+
+    this.b.tile_selected(first_elem);
+    this.b.tile_selected(last_elem);
+    var self = this;
+    setTimeout(function () { self.autoplay() }, 1000);
 }
 
 Game.prototype.select_focused = function () {
@@ -892,7 +930,10 @@ Game.prototype.reset = function () {
         this.curfocus = null;
     }
 
-    this.cheat_mode = false;
+    if (this._autoplay_mode !== true) {
+        this.cheat_mode = false;
+    }
+    
     this.started_at = null;
     this.clock.reset();
     // clear board & DOM
