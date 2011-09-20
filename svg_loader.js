@@ -127,18 +127,22 @@ XHRExternalSVG.prototype.import_tileset = function(cb) {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', url, true);
         xhr.onreadystatechange = function (evt) {
-        //Do not explicitly handle errors, those should be
-        //visible via console output in the browser.
-        if (xhr.readyState === 4) {
-            callback(xhr.responseXML);
-        }
+            //Do not explicitly handle errors, those should be
+            //visible via console output in the browser.
+            if (xhr.readyState === 4) {
+                callback(xhr.responseXML);
+            }
         };
         xhr.send(null);
     };
 
     var self = this;
     //fetch the document
-    fetchXML(self.filename, function(newSVGDoc) { self.xml_parse_cb(newSVGDoc, cb) });
+    try {
+        fetchXML(self.filename, function(newSVGDoc) { self.xml_parse_cb(newSVGDoc, cb) });
+    } catch(e) {
+        alert('Failed to load tileset: '+e+'typeof'+typeof(e));
+    }
 }
 
 XHRExternalSVG.prototype.reposition_elements = function () {

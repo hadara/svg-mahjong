@@ -23,11 +23,15 @@ var WANT_VIEWBOX = true;
 
 var global_id = 0;
 
+function get_monotonic_increment_id() {
+    return global_id++;
+}
+
 var game = null;
 
 function Tile(name) {
     this.name = name;
-    this.id = global_id++;
+    this.id = get_monotonic_increment_id();
     this.create_dom_elem();
 }
 
@@ -84,8 +88,7 @@ Tile.prototype.create_dom_elem = function() {
     g.appendChild(this.get_bg());
     g.appendChild(bg);
     g.appendChild(u);
-    g.setAttribute('id', 'tile_'+global_id);
-    global_id += 1;
+    g.setAttribute('id', 'mj_tile_'+this.id);
 
     this.dom_ref = g;
     return g;
@@ -271,9 +274,9 @@ Board.prototype.lay_out_board = function() {
      * We have to do it as a separate step since SVG follows 
      * painters model so the order in which tiles appear in the DOM matters
      */
-    for (var i=0; i<this.height; i++) {
-        for (var j=0; j<this.width; j++) {
-            this.dom_board.appendChild(this.board[i][j].dom_ref);
+    for (var i=0; i<this.width; i++) {
+        for (var j=0; j<this.height; j++) {
+            this.dom_board.appendChild(this.board[j][i].dom_ref);
         }
     }
 }
@@ -542,6 +545,10 @@ Board.prototype.cleanup_tile_animation = function (tile) {
 Board.prototype.remove_tile = function (tile) {
     /* remove element from visual and internal boards
      */
+
+    /* we can't run the hide animation in parallel on different tiles so we have to make
+     * copies of the original one to do that
+     */
     var master_anim = document.getElementById('tile_hide_effect');
     if (!master_anim) {
         // probably no SMIL support, just hide the tile right away
@@ -555,16 +562,85 @@ Board.prototype.remove_tile = function (tile) {
     tile.anim = anim;
     // FIXME
     // it would be far nicer to connect the animation cleanup with
-    // animation end event but that doesn't seem to be widely implemented
+    // animation end event but that doesn't seem to work in Chrome
     var self = this;
-    anim.addEventListener('end', function() { self.cleanup_tile_animation(tile) },  false);
-    //anim.onend = function() { alert('onend'); self.cleanup_tile_animation(tile) };
+    //anim.addEventListener('end', function() { self.cleanup_tile_animation(tile) },  false);
     setTimeout(function() { self.cleanup_tile_animation(tile) }, 1000);
     anim.beginElement();
 
-    // it would be far nicer to connect the animation cleanup with
-    // animation onend event but that doesn't seem to be widely implemented
     this.board[tile.y][tile.x] = null;
+
+    if (game.gravity === true) {
+        this.collapse_column(tile.x);
+    }
+}
+
+Board.prototype.create_fall_animation = function (column, fall_pos, e, trigger_anim) {
+    /* creates falling animation when gravity is enabled
+     */
+    
+
+    /* falling animation is achieved by creating clones of the template
+     * animation for all the elements in the column that we are collapsing
+     * animation begin events are tied to the first one so calling of the
+     * begin on the first one will cause others to start in parallel
+     */
+    // XXX: it might be necessary to find a way in the future to clean
+    // up animations that are done afterwards since otherwise we will
+    // end up with huge amount of these in out DOM. It might not be easy since in the
+    // current way of going things animations are cumulative and removing an
+    // old one will probably cause change in the tiles position unless we modify
+    // tiles own transformation matrix at the same time. Some flicker might still
+    // be visible though.
+    var master_anim = document.getElementById('tile_fall_effect');
+    var anim = master_anim.cloneNode(false);
+    var offset = (fall_pos * Tile.prototype.height);
+
+    anim.setAttribute('by', '0,'+offset);
+    anim.setAttributeNS(XLINKNS, 'href', '#'+e.getAttribute('id'));
+    anim.setAttribute('id', 'mj_anim_'+get_monotonic_increment_id());
+
+    if (trigger_anim) {
+        // if we have a trigger then connect our begin event with trigger begin event
+        anim.setAttribute('begin', trigger_anim.getAttribute('id')+'.begin');
+    }
+
+    document.svgroot.appendChild(anim);
+    return anim;
+}
+
+Board.prototype.collapse_column = function (column) {
+    /* attempt to collect column of tiles when the gravity is enabled
+     */
+    var last_free_pos = null;
+    var last_anim = null;
+    var first_anim = null;
+
+    for (var i=this.height-1; i>=0; i--) {
+        if (this.board[i][column] === null) {
+            last_free_pos = i;
+        } else if (last_free_pos !== null) {
+            // can fall
+            var e = this.board[i][column];
+            var y_start = i; 
+            var y_end = last_free_pos; 
+            var anim = this.create_fall_animation(column, y_end-y_start, e.dom_ref, first_anim);
+
+            if (first_anim === null) {
+                // have to keep the first animation around since it will be used
+                // as a trigger for others
+                first_anim = anim;
+            }
+            this.board[last_free_pos][column] = this.board[i][column];
+            this.board[i][column] = null;
+            e.set_board_pos(column, last_free_pos);
+            last_free_pos -= 1;
+        }
+    }
+    
+    if (first_anim) {
+        first_anim.beginElement();
+    }
 }
 
 Board.prototype.tile_selected = function (tile) {
@@ -792,6 +868,10 @@ Game.prototype.board_init = function () {
     this.b.init();
 
     this.clock.start();
+    if (!document.getElementById('tile_fall_effect')) {
+        // no SMIL support or animation not defined
+        this.gravity = false;
+    }
 }
 
 Game.prototype.new_game = function () {
