@@ -48,7 +48,6 @@ ExternalSVG.prototype.get_use_for_elem = function(element_id) {
      */
     var origtile = this.get_orig_domref_by_id(element_id);
     var pos = getScreenBBox(origtile);
-    //console.log(element_id+":"+pos.height+"x"+pos.width);
     var bg = document.createElementNS(SVGNS, "use");
     bg.setAttribute('x', -pos.x);
     bg.setAttribute('y', -pos.y);

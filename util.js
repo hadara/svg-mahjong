@@ -81,7 +81,11 @@ function getScreenBBox(e) {
 }
 
 function my_log(s) {
-    if (DEBUG === true && console !== undefined) {
-        console.log(s);
+    if (DEBUG === true) {
+        if (typeof console !== undefined) {
+            console.log(s);
+        } else {
+            alert(s);
+        }
     }
 }

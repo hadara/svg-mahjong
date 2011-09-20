@@ -78,7 +78,6 @@ Tile.prototype.get_bg = function() {
 }
 
 Tile.prototype.create_dom_elem = function() {
-    my_log('create elem '+this.name);
     var g = this.create_g();
     var bg = this.create_background();
     this.bg = bg;
@@ -302,6 +301,13 @@ Board.prototype.init = function() {
     var i, tlen;
     var x=0, y=0;
 
+    if (this.dom_board !== null) {
+        // XXX: hack for the case where new_game() is called
+        // in that case the viewBox is already present and we want
+        // to get rid of it
+        this.dom_board.setAttribute('viewBox', '');
+    }
+        
     this.construct_board();
     this.dom_board = document.getElementById('hgameboard');
     document.svgroot = this.dom_board;
@@ -545,6 +551,7 @@ Board.prototype.cleanup_tile_animation = function (tile) {
 Board.prototype.remove_tile = function (tile) {
     /* remove element from visual and internal boards
      */
+    this.board[tile.y][tile.x] = null;
 
     /* we can't run the hide animation in parallel on different tiles so we have to make
      * copies of the original one to do that
@@ -567,8 +574,6 @@ Board.prototype.remove_tile = function (tile) {
     //anim.addEventListener('end', function() { self.cleanup_tile_animation(tile) },  false);
     setTimeout(function() { self.cleanup_tile_animation(tile) }, 1000);
     anim.beginElement();
-
-    this.board[tile.y][tile.x] = null;
 
     if (game.gravity === true) {
         this.collapse_column(tile.x);
@@ -832,7 +837,7 @@ Game.prototype.draw_focus = function () {
 }
 
 Game.prototype.init_focusbox = function () {
-    var fb = document.getElementById('focusbox_template');
+    var fb = document.getElementById('focusbox_template').cloneNode(false);
     fb.setAttribute('id', 'focusbox');
     fb.setAttribute('height', Tile.prototype.height);
     fb.setAttribute('width', Tile.prototype.width);
@@ -881,6 +886,12 @@ Game.prototype.new_game = function () {
 }
 
 Game.prototype.reset = function () {
+    var fb = document.getElementById('focusbox');
+    if (fb) {
+        document.svgroot.removeChild(fb);
+        this.curfocus = null;
+    }
+
     this.cheat_mode = false;
     this.started_at = null;
     this.clock.reset();
