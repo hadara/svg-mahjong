@@ -293,7 +293,9 @@ Board.prototype.clear_board = function() {
     var len = this._tiles.length;
     for (var i=0; i<len; i++) {
         var e = this._tiles.pop()
-        this.dom_board.removeChild(e.dom_ref);
+	if (e.dom_ref !== null) {
+            this.dom_board.removeChild(e.dom_ref);
+        }
     }
     this.clean_fall_animation_cache();
 }
@@ -356,8 +358,9 @@ Board.prototype.have_moves_left = function() {
     return false;
 }
 
-Board.prototype.remove_element_from_board = function (e) {
-    this.translate_to_position(e, -2000, -2000);
+Board.prototype.remove_dom_tile = function (e) {
+    document.svgroot.removeChild(e.dom_ref);
+    e.dom_ref = null;
 }
 
 Board.prototype.print_path = function (path) {
@@ -546,7 +549,7 @@ Board.prototype.is_ok_to_pair = function (e1, e2) {
 Board.prototype.cleanup_tile_animation = function (tile) {
     /* remove the tile and animation after the hide animation is finished
      */
-    this.remove_element_from_board(tile.dom_ref);
+    this.remove_dom_tile(tile);
     this.drop_from_fall_animation_cache(tile.id);
     document.svgroot.removeChild(tile.anim);
     delete tile.anim;
@@ -563,7 +566,7 @@ Board.prototype.remove_tile = function (tile) {
     var master_anim = document.getElementById('tile_hide_effect');
     if (!master_anim) {
         // probably no SMIL support, just hide the tile right away
-        this.remove_element_from_board(tile.dom_ref);
+        this.remove_dom_tile(tile);
         this.drop_from_fall_animation_cache(tile.id);
         return;
     }
