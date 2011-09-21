@@ -678,6 +678,17 @@ Board.prototype.collapse_column = function (column) {
     }
 }
 
+Board.prototype.show_text = function (text) {
+    var t = document.createElementNS(SVGNS, "text");
+    t.textContent = text;
+    t.setAttribute('x', 600);
+    t.setAttribute('y', 350);
+    t.setAttribute('font-size', 40);
+    t.setAttribute('font-weight', 'bold');
+    document.svgroot.appendChild(t);
+    return t;
+}
+
 Board.prototype.tile_selected = function (tile) {
     if (tile === this.previous_selection) {
         this.previous_selection.unhighlight();
@@ -693,8 +704,9 @@ Board.prototype.tile_selected = function (tile) {
             this.remove_tile(this.previous_selection);
             this.previous_selection = null;
             if (this.have_moves_left() === false) {
-                alert("No more moves!");
-                this.init();
+                var t = this.show_text('No more moves!');
+                setTimeout(function () { document.svgroot.removeChild(t); game.new_game(); }, 5000);
+                return false;
             }
         } else {
             this.previous_selection.unhighlight();
@@ -841,8 +853,9 @@ Game.prototype.autoplay = function () {
     }
 
     var p = this.b.get_all_possible_moves(1);
-    if (!p) {
-        return this.new_game();
+    if (p.length == 0) {
+        // no more moves
+        return;
     }
     p = p[0];
 
