@@ -31,7 +31,7 @@ var game = null;
 
 function Tile(name) {
     this.name = name;
-    this.id = get_monotonic_increment_id();
+    this.id = "mj_tile_"+get_monotonic_increment_id();
     this.create_dom_elem();
 }
 
@@ -87,7 +87,7 @@ Tile.prototype.create_dom_elem = function() {
     g.appendChild(this.get_bg());
     g.appendChild(bg);
     g.appendChild(u);
-    g.setAttribute('id', 'mj_tile_'+this.id);
+    g.setAttribute('id', this.id);
 
     this.dom_ref = g;
     return g;
@@ -295,11 +295,14 @@ Board.prototype.clear_board = function() {
         var e = this._tiles.pop()
         this.dom_board.removeChild(e.dom_ref);
     }
+    this.clean_fall_animation_cache();
 }
 
 Board.prototype.init = function() {
     var i, tlen;
     var x=0, y=0;
+
+    this.fall_animations = {};
 
     if (this.dom_board !== null) {
         // XXX: hack for the case where new_game() is called
@@ -544,6 +547,7 @@ Board.prototype.cleanup_tile_animation = function (tile) {
     /* remove the tile and animation after the hide animation is finished
      */
     this.remove_element_from_board(tile.dom_ref);
+    this.drop_from_fall_animation_cache(tile.id);
     document.svgroot.removeChild(tile.anim);
     delete tile.anim;
 }
@@ -560,6 +564,7 @@ Board.prototype.remove_tile = function (tile) {
     if (!master_anim) {
         // probably no SMIL support, just hide the tile right away
         this.remove_element_from_board(tile.dom_ref);
+        this.drop_from_fall_animation_cache(tile.id);
         return;
     }
     var anim = master_anim.cloneNode(false);
@@ -580,14 +585,28 @@ Board.prototype.remove_tile = function (tile) {
     }
 }
 
-Board.prototype.create_fall_animation = function (column, fall_pos, e, trigger_anim) {
+Board.prototype.drop_from_fall_animation_cache = function (element_id) {
+    if (element_id in this.fall_animations) {
+        document.svgroot.removeChild(this.fall_animations[element_id]);
+        delete this.fall_animations[element_id];
+    }
+}
+
+Board.prototype.clean_fall_animation_cache = function () {
+    for (var k in this.fall_animations) {
+        document.svgroot.removeChild(this.fall_animations[k]);
+    }
+    this.fall_animations = {};
+}
+
+Board.prototype.create_fall_animation = function (column, y_start, y_end, e, trigger_anim) {
     /* creates falling animation when gravity is enabled
      */
     
 
     /* falling animation is achieved by creating clones of the template
-     * animation for all the elements in the column that we are collapsing
-     * animation begin events are tied to the first one so calling of the
+     * animation for all the elements in the column that we are collapsing.
+     * Animation begin events are tied to the first one so calling of the
      * begin on the first one will cause others to start in parallel
      */
     // XXX: it might be necessary to find a way in the future to clean
@@ -597,11 +616,22 @@ Board.prototype.create_fall_animation = function (column, fall_pos, e, trigger_a
     // old one will probably cause change in the tiles position unless we modify
     // tiles own transformation matrix at the same time. Some flicker might still
     // be visible though.
-    var master_anim = document.getElementById('tile_fall_effect');
-    var anim = master_anim.cloneNode(false);
-    var offset = (fall_pos * Tile.prototype.height);
+    var xpos = (column*Tile.prototype.width)+this.PADDING_LEFT;
+    var cur_y = (y_start*Tile.prototype.height)+this.PADDING_TOP;
+    var end_y = (y_end*Tile.prototype.height)+this.PADDING_TOP;
 
-    anim.setAttribute('by', '0,'+offset);
+    var prev_val = 0;
+    if (e.getAttribute('id') in this.fall_animations) {
+        anim = this.fall_animations[e.getAttribute('id')];
+    } else {
+        var master_anim = document.getElementById('tile_fall_effect');
+        var anim = master_anim.cloneNode(false);
+        this.fall_animations[e.getAttribute('id')] = anim;
+    }
+
+    anim.setAttribute('from', xpos+","+cur_y);
+    anim.setAttribute('to', xpos+','+(end_y));
+
     anim.setAttributeNS(XLINKNS, 'href', '#'+e.getAttribute('id'));
     anim.setAttribute('id', 'mj_anim_'+get_monotonic_increment_id());
 
@@ -629,7 +659,7 @@ Board.prototype.collapse_column = function (column) {
             var e = this.board[i][column];
             var y_start = i; 
             var y_end = last_free_pos; 
-            var anim = this.create_fall_animation(column, y_end-y_start, e.dom_ref, first_anim);
+            var anim = this.create_fall_animation(column, y_start, y_end, e.dom_ref, first_anim);
 
             if (first_anim === null) {
                 // have to keep the first animation around since it will be used
