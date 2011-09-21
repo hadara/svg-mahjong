@@ -310,7 +310,7 @@ Board.prototype.init = function() {
         // XXX: hack for the case where new_game() is called
         // in that case the viewBox is already present and we want
         // to get rid of it
-        this.dom_board.setAttribute('viewBox', '');
+        this.dom_board.removeAttribute('viewBox');
     }
         
     this.construct_board();
@@ -335,15 +335,25 @@ Board.prototype.init = function() {
     }
 }
 
+var callcount = 0;
+
 Board.prototype.get_all_possible_moves = function(limit) {
     /* get all the possible move paths or up to the specified limit
      */
     var moves = Array();
 
+    var start = (new Date).getTime();
+    var curcalls = callcount;
+
     for (var i=0; i<this.width; i++) {
         for (var j=0; j<this.height; j++) {
             if (this.board[j][i] !== null) {
                 this.get_moves_from_tile(this.board[j][i], Array(), moves, limit);
+            }
+	    if (limit && moves.length >= limit) {
+                var diff = (new Date).getTime() - start;
+                //console.log('diff:'+diff+' calls:'+(callcount-curcalls));
+                return moves;
             }
         }
     }
@@ -410,6 +420,7 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
      * @arg end_elem: can be used to specify that you only want paths that end with certain
      *    element. Has to be Tile object if defined.  
      */
+    callcount += 1;
     my_log('recurse');
     var SIDEMAP = Array(
         [-1, 0], // left
@@ -430,12 +441,12 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
     }
 
     var corner_count = this.get_path_corner_count(path);
-    my_log('conerts'+corner_count);
+    my_log('corners:'+corner_count);
 
     if (corner_count > MAX_ALLOWED_CORNERS) {
         // push selection to paths if we have success
         // no need to check for match if 
-        my_log('path count too large');
+        my_log('corner count too large');
         return;
     } 
 
