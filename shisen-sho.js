@@ -38,11 +38,10 @@ function mynonrandom() {
     return _rand;
 }
 
+var rand = Math.random;
 if (BENCHMARK_MODE === true) {
     rand = mynonrandom;
-} else {
-    rand = Math.random;
-}
+} 
 
 var game = null;
 
