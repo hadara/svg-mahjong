@@ -27,6 +27,23 @@ function get_monotonic_increment_id() {
     return global_id++;
 }
 
+var BENCHMARK_MODE = false;
+
+var _rand = 0;
+function mynonrandom() {
+    _rand += 0.01;
+    if (_rand > 1.0) {
+        _rand = 0.0;
+    }
+    return _rand;
+}
+
+if (BENCHMARK_MODE === true) {
+    rand = mynonrandom;
+} else {
+    rand = Math.random;
+}
+
 var game = null;
 
 function Tile(name) {
@@ -184,7 +201,7 @@ Board.prototype.get_tile_pair = function(tile_name) {
 }
 
 Board.prototype.get_random_tile_name = function() {
-    var randpos = Math.floor(Math.random()*this.tiles.length);
+    var randpos = Math.floor(rand()*this.tiles.length);
     return this.tiles[randpos];
 }
 
@@ -223,7 +240,7 @@ Board.prototype.draw_path = function(path) {
 
 Board.prototype.get_random_free_position = function() {
     var freelist = this._free_positions;
-    var fpos = Math.floor(Math.random()*this._free_positions.length);
+    var fpos = Math.floor(rand()*this._free_positions.length);
     return this._free_positions.splice(fpos, 1)[0];
 }
 
@@ -352,7 +369,9 @@ Board.prototype.get_all_possible_moves = function(limit) {
             }
 	    if (limit && moves.length >= limit) {
                 var diff = (new Date).getTime() - start;
-                //console.log('diff:'+diff+' calls:'+(callcount-curcalls));
+                if (BENCHMARK_MODE) {
+                    console.log('diff:'+diff+' calls:'+(callcount-curcalls));
+                }
                 return moves;
             }
         }
@@ -411,7 +430,10 @@ Board.prototype.get_path_corner_count = function (path) {
     return corners;
 }
 
-Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem) {
+var DIRECTION_X = 0;
+var DIRECTION_Y = 1;
+
+Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem, direction, corners) {
     /* append all the possible moves from the tile e1 into the paths array
      * each path element will be an object that has at least x and y keys
      *
@@ -430,28 +452,32 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
     );
     var MAX_ALLOWED_CORNERS = 3;
 
+    if (corners === undefined) {
+        corners = 0;
+    }
+
     if (path.length === 0) {
         path.push(e1);
     }
 
     if (limit !== undefined && limit <= paths.length) {
-        // if caller did want all possible paths and we already have enough
+        // if caller did NOT want all possible paths and we already have enough
         // then just return right away
         return;
     }
 
-    var corner_count = this.get_path_corner_count(path);
-    my_log('corners:'+corner_count);
+    //var corner_count = this.get_path_corner_count(path);
+    //my_log('corners:'+corner_count);
 
-    if (corner_count > MAX_ALLOWED_CORNERS) {
+    if (corners > MAX_ALLOWED_CORNERS) {
         // push selection to paths if we have success
         // no need to check for match if 
         my_log('corner count too large');
         return;
     } 
+    var lastelem = path[path.length-1];
 
     if (path.length > 1) {
-        var lastelem = path[path.length-1];
         my_log('lastelem '+lastelem);
 
         if (lastelem.name === undefined) {
@@ -530,8 +556,19 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
             }
         }
 
+        var corner_diff = 0;
+        var new_direction = direction;
+
+        if (lastelem.x === tmp.x && direction !== DIRECTION_X) {
+            corner_diff = 1;
+            new_direction = DIRECTION_X;
+        } else if (lastelem.y === tmp.y && direction !== DIRECTION_Y) {
+            corner_diff = 1;
+            new_direction = DIRECTION_Y;
+        }
+
         path.push(tmp);
-        this.get_moves_from_tile(e1, path, paths, limit, end_elem);
+        this.get_moves_from_tile(e1, path, paths, limit, end_elem, new_direction, corners+corner_diff);
         path.pop();
     }
 }
