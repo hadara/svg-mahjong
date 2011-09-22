@@ -27,7 +27,7 @@ function get_monotonic_increment_id() {
     return global_id++;
 }
 
-var BENCHMARK_MODE = false;
+var BENCHMARK_MODE = false
 
 var _rand = 0;
 function mynonrandom() {
@@ -370,6 +370,7 @@ Board.prototype.get_all_possible_moves = function(limit) {
                 var diff = (new Date).getTime() - start;
                 if (BENCHMARK_MODE) {
                     console.log('diff:'+diff+' calls:'+(callcount-curcalls));
+                    //alert('diff:'+diff+' calls:'+(callcount-curcalls));
                 }
                 return moves;
             }
@@ -431,6 +432,13 @@ Board.prototype.get_path_corner_count = function (path) {
 
 var DIRECTION_X = 0;
 var DIRECTION_Y = 1;
+var SIDEMAP = Array(
+    [-1, 0], // left
+    [0, -1], // upper
+    [1, 0], // right
+    [0, 1] // below
+);
+var MAX_ALLOWED_CORNERS = 3;
 
 Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem, direction, corners) {
     /* append all the possible moves from the tile e1 into the paths array
@@ -442,14 +450,7 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
      *    element. Has to be Tile object if defined.  
      */
     callcount += 1;
-    my_log('recurse');
-    var SIDEMAP = Array(
-        [-1, 0], // left
-        [0, -1], // upper
-        [1, 0], // right
-        [0, 1] // below
-    );
-    var MAX_ALLOWED_CORNERS = 3;
+    //my_log('recurse');
 
     if (corners === undefined) {
         corners = 0;
@@ -471,17 +472,18 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
     if (corners > MAX_ALLOWED_CORNERS) {
         // push selection to paths if we have success
         // no need to check for match if 
-        my_log('corner count too large');
+        //my_log('corner count too large');
         return;
     } 
     var lastelem = path[path.length-1];
 
     if (path.length > 1) {
-        my_log('lastelem '+lastelem);
+        //my_log('lastelem '+lastelem);
 
         if (lastelem.name === undefined) {
             // is outside the board or is empty
-            my_log('last pathelem is empty');
+            //my_log('last pathelem is empty');
+            ;
         } else if (lastelem.name === e1.name && 
             (end_elem === undefined || 
                 (lastelem.x === end_elem.x && lastelem.y === end_elem.y)
@@ -492,13 +494,13 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
 
             for (var i=0; i<path.length; i++) {
                 var tmp = path[i];
-                my_log('push new path'+tmp.x+' '+tmp.y);
+                //my_log('push new path'+tmp.x+' '+tmp.y);
                 a.push({'x': tmp.x, 'y': tmp.y});
             }
 
             paths.push(a);
             this.print_path(a);
-            my_log('identity match succeeded');
+            //my_log('identity match succeeded');
             return;
         } else if (lastelem.name !== undefined) {
             // we have encountered taken position that did not match
@@ -518,14 +520,14 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
         var tile_pos = Array(this_tile.x+SIDEMAP[i][0], this_tile.y+SIDEMAP[i][1]);
 
         if (last_elem !== null) {
-            my_log('check lastelem'+last_elem.x+' '+last_elem.y+'   '+tile_pos[0]+' '+tile_pos[1]);
+            //my_log('check lastelem'+last_elem.x+' '+last_elem.y+'   '+tile_pos[0]+' '+tile_pos[1]);
             if (tile_pos[0] === last_elem.x && tile_pos[1] === last_elem.y) {
                 // do not go back the same way we came from
                 continue;
             }
         }
 
-        my_log('investigate sidepos:'+tile_pos);
+        //my_log('investigate sidepos:'+tile_pos);
 
         if ((tile_pos[0] >= 0 && tile_pos[0] < this.width) && 
             (tile_pos[1] >= 0 && tile_pos[1] < this.height)) {
@@ -535,7 +537,7 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
             if (tmp === null) {
                 // empty position
                 tmp = {'x':tile_pos[0], 'y': tile_pos[1]};
-                my_log('recurse on empty position '+tmp);
+                //my_log('recurse on empty position '+tmp);
             } else {
                 // position is filled, if it's not a match then there's no need to continue
                 if (e1.name !== tmp.name) {
@@ -546,11 +548,11 @@ Board.prototype.get_moves_from_tile = function (e1, path, paths, limit, end_elem
             // not within the board, recurse if less than 1 step away
             if ((tile_pos[0] >= -1 && tile_pos[0] <= this.width) &&
                 (tile_pos[1] >= -1 && tile_pos[1] <= this.height)) {
-                my_log('not on board tile pos: '+tile_pos[0]+' '+tile_pos[1]);
+                //my_log('not on board tile pos: '+tile_pos[0]+' '+tile_pos[1]);
                 var tmp = {'x': tile_pos[0], 'y': tile_pos[1]}
             } else {
                 // more than 1 step away from the board
-                my_log('continue:'+tile_pos);
+                //my_log('continue:'+tile_pos);
                 continue;
             }
         }
