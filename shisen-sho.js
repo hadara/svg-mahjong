@@ -189,9 +189,14 @@ Board.prototype.tiles = new Array(
     );
 
 Board.prototype.dom_board = null;
+// internal board containing the game state
 Board.prototype.board = Array();
+// holds all the tiles that are currently in the DOM, not necessarily
+// all visible
 Board.prototype._tiles = Array();
 Board.prototype._free_positions = Array();
+// how many tiles are still on the board
+Board.prototype.tiles_left = 0;
 
 Board.prototype.previous_selection = null;
 
@@ -204,6 +209,7 @@ Board.prototype.PADDING_LEFT = 60;
 Board.prototype.get_tile_by_name = function(name) {
     var t = new Tile(name);
     this._tiles.push(t);
+    this.tiles_left += 1;
     return t;
 }
 
@@ -321,7 +327,7 @@ Board.prototype.clear_board = function() {
     var len = this._tiles.length;
     for (var i=0; i<len; i++) {
         var e = this._tiles.pop()
-	if (e.dom_ref !== null) {
+        if (e.dom_ref !== null) {
             this.dom_board.removeChild(e.dom_ref);
         }
     }
@@ -333,6 +339,7 @@ Board.prototype.init = function() {
     var x=0, y=0;
 
     this.fall_animations = {};
+    this.tiles_left = 0;
 
     if (this.dom_board !== null) {
         // XXX: hack for the case where new_game() is called
@@ -620,6 +627,7 @@ Board.prototype.remove_tile = function (tile) {
     /* remove element from visual and internal boards
      */
     this.board[tile.y][tile.x] = null;
+    this.tiles_left -= 1;
 
     /* we can't run the hide animation in parallel on different tiles so we have to make
      * copies of the original one to do that
@@ -769,7 +777,12 @@ Board.prototype.tile_selected = function (tile) {
             this.remove_tile(this.previous_selection);
             this.previous_selection = null;
             if (this.have_moves_left() === false) {
-                var t = this.show_text('No more moves!');
+                if (this.tiles_left === 0) {
+                    var t = this.show_text('You won!');
+                } else {
+                    var t = this.show_text('No moves left!');
+                }
+
                 setTimeout(function () { document.svgroot.removeChild(t); game.new_game(); }, 5000);
                 return false;
             }
@@ -1011,7 +1024,9 @@ Game.prototype.show_hint = function () {
     var p = this.b.get_all_possible_moves(1);
 
     if (p.length === 0) {
-        alert('no more moves!');
+        // this shouldn't happen since we check for next possible move
+        // after each successful move
+        alert('No moves left!');
     } else {
         this.b.draw_path(p[0]);
     }
@@ -1045,6 +1060,9 @@ Game.prototype.new_game = function () {
     this.reset();
     this.b.clear_board();
     this.b.init();
+    if (this._autoplay_mode === true) {
+        this.autoplay();
+    }
 }
 
 Game.prototype.reset = function () {
