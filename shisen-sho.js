@@ -735,7 +735,7 @@ Board.prototype.show_text = function (text) {
     t.textContent = text;
     t.setAttribute('x', 600);
     t.setAttribute('y', 350);
-    t.setAttribute('font-size', 40);
+    t.setAttribute('font-size', 52);
     t.setAttribute('font-weight', 'bold');
     document.svgroot.appendChild(t);
     return t;
@@ -851,7 +851,7 @@ Game.prototype.cheat_mode = false;
 Game.prototype._autoplay_mode = false;
 Game.prototype.started_at = null;
 Game.prototype.curfocus = null;
-Game.prototype.gravity = true;
+Game.prototype.gravity = false;
 Game.prototype.KEY_HINT = 72; // 'h'
 Game.prototype.KEY_AUTOPLAY = 65; // 'a'
 Game.prototype.KEY_NEW = 78; // 'n'
@@ -862,11 +862,15 @@ Game.prototype.KEY_LEFT = 37;
 Game.prototype.KEY_DOWN = 40;
 Game.prototype.KEY_OK = 13; // enter
 
+Game.prototype.KEY_BLUE = 917507;
+Game.prototype.KEY_YELLOW = 917506;
+Game.prototype.KEY_GREEN = 917505;
+
 Game.prototype.keyhandler = function (evt) {
     var key = evt.which;
     if (key === game.KEY_HINT) {
         this.show_hint();
-    } else if (key === game.KEY_NEW) {
+    } else if (key === game.KEY_NEW || key === game.KEY_YELLOW) {
         this.new_game();
     } else if (key === game.KEY_SETTINGS) {
         this.show_settings();
@@ -880,12 +884,27 @@ Game.prototype.keyhandler = function (evt) {
         this.focus(0, 1);
     } else if (key === game.KEY_OK) {
         this.select_focused();
-    } else if (key === game.KEY_AUTOPLAY) {
+    } else if (key === game.KEY_AUTOPLAY || key === game.KEY_BLUE) {
         this.toggle_autoplay();
+    } else if (key === game.KEY_GREEN) {
+        if (this.gravity === true) {
+            var t = this.b.show_text('Gravity off');
+            setTimeout(function () { document.svgroot.removeChild(t); }, 2000);
+            this.gravity = false;
+        } else {
+            var t = this.b.show_text('Gravity on');
+            setTimeout(function () { document.svgroot.removeChild(t); }, 2000);
+            this.gravity = true;
+        }
     } else {
         my_log('unknown key pressed:'+key);
     }
 }
+
+// red: 917504
+// green: 917505
+// yellow: 917506
+// blue: 917507
 
 Game.prototype.toggle_autoplay = function () {
     if (this._autoplay_mode) {
