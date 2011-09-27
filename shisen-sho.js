@@ -374,11 +374,11 @@ Board.prototype.get_all_possible_moves = function(limit) {
     var curcalls = callcount;
 
     for (var i=0; i<this.width; i++) {
-        for (var j=0; j<this.height; j++) {
+        for (var j=this.height-1; j>=0; j--) {
             if (this.board[j][i] !== null) {
                 this.get_moves_from_tile(this.board[j][i], Array(), moves, limit);
             }
-	    if (limit && moves.length >= limit) {
+            if (limit && moves.length >= limit) {
                 var diff = (new Date).getTime() - start;
                 if (BENCHMARK_MODE) {
                     console.log('diff:'+diff+' calls:'+(callcount-curcalls));
