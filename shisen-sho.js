@@ -7,6 +7,7 @@
 
 var SVGNS = "http://www.w3.org/2000/svg";
 var XLINKNS = "http://www.w3.org/1999/xlink";
+var EKIOHNS = "http://www.ekioh.com/2007/ekioh";
 
 var TILESETS = {
     "traditional": "artwork/traditional.svg",
@@ -79,8 +80,19 @@ Tile.prototype.create_background = function() {
     return r;
 }
 
-Tile.prototype.create_g = function() {
-    var g = document.createElementNS(SVGNS, "g");
+Tile.prototype.create_group = function() {
+    if (navigator.userAgent.indexOf('Ekioh') != -1) {
+        // on Ekioh we will use non-std layer tag instead of the g tag because
+        // it's cached as a bitmap and will perform much better in animations that
+        // move the tile around (gravity mode)
+        var g = document.createElementNS(EKIOHNS, 'layer');
+        var SHADOW_OFFSET = 10;
+        g.setAttributeNS(EKIOHNS, 'layerType', 'software');
+        g.setAttributeNS(SVGNS, 'height', this.height+SHADOW_OFFSET);
+        g.setAttributeNS(SVGNS, 'width', this.width+SHADOW_OFFSET);
+    } else {
+        var g = document.createElementNS(SVGNS, "g");
+    }
     return g;
 }
 
@@ -94,7 +106,7 @@ Tile.prototype.get_bg = function() {
 }
 
 Tile.prototype.create_dom_elem = function() {
-    var g = this.create_g();
+    var g = this.create_group();
     var bg = this.create_background();
     this.bg = bg;
 
@@ -733,9 +745,10 @@ Board.prototype.collapse_column = function (column) {
 Board.prototype.show_text = function (text) {
     var t = document.createElementNS(SVGNS, "text");
     t.textContent = text;
+    // XXX: center it
     t.setAttribute('x', 600);
     t.setAttribute('y', 350);
-    t.setAttribute('font-size', 52);
+    t.setAttribute('font-size', 80);
     t.setAttribute('font-weight', 'bold');
     document.svgroot.appendChild(t);
     return t;
@@ -851,11 +864,12 @@ Game.prototype.cheat_mode = false;
 Game.prototype._autoplay_mode = false;
 Game.prototype.started_at = null;
 Game.prototype.curfocus = null;
-Game.prototype.gravity = false;
+Game.prototype.gravity = true;
 Game.prototype.KEY_HINT = 72; // 'h'
 Game.prototype.KEY_AUTOPLAY = 65; // 'a'
 Game.prototype.KEY_NEW = 78; // 'n'
-Game.prototype.KEY_SETTINGS = 83;
+Game.prototype.KEY_GRAVITY = 71; // 'g'
+Game.prototype.KEY_SETTINGS = 83; // 's'
 Game.prototype.KEY_RIGHT = 39;
 Game.prototype.KEY_UP = 38;
 Game.prototype.KEY_LEFT = 37;
@@ -865,6 +879,7 @@ Game.prototype.KEY_OK = 13; // enter
 Game.prototype.KEY_BLUE = 917507;
 Game.prototype.KEY_YELLOW = 917506;
 Game.prototype.KEY_GREEN = 917505;
+Game.prototype.KEY_RED = 917504;
 
 Game.prototype.keyhandler = function (evt) {
     var key = evt.which;
@@ -886,7 +901,7 @@ Game.prototype.keyhandler = function (evt) {
         this.select_focused();
     } else if (key === game.KEY_AUTOPLAY || key === game.KEY_BLUE) {
         this.toggle_autoplay();
-    } else if (key === game.KEY_GREEN) {
+    } else if (key === game.KEY_GRAVITY || key === game.KEY_GREEN) {
         if (this.gravity === true) {
             var t = this.b.show_text('Gravity off');
             setTimeout(function () { document.svgroot.removeChild(t); }, 2000);
@@ -900,11 +915,6 @@ Game.prototype.keyhandler = function (evt) {
         my_log('unknown key pressed:'+key);
     }
 }
-
-// red: 917504
-// green: 917505
-// yellow: 917506
-// blue: 917507
 
 Game.prototype.toggle_autoplay = function () {
     if (this._autoplay_mode) {
