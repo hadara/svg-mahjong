@@ -309,7 +309,7 @@ Board.prototype.lay_out_board = function() {
      */
     for (var i=0; i<this.width; i++) {
         for (var j=0; j<this.height; j++) {
-            this.dom_board.appendChild(this.board[j][i].dom_ref);
+            this.visible_board.appendChild(this.board[j][i].dom_ref);
         }
     }
 }
@@ -350,6 +350,7 @@ Board.prototype.init = function() {
         
     this.construct_board();
     this.dom_board = document.getElementById('hgameboard');
+    this.visible_board = document.getElementById('visible_board');
     document.svgroot = this.dom_board;
 
     var element_pairs = (this.height*this.width)/2;
@@ -407,7 +408,7 @@ Board.prototype.have_moves_left = function() {
 }
 
 Board.prototype.remove_dom_tile = function (e) {
-    document.svgroot.removeChild(e.dom_ref);
+    this.visible_board.removeChild(e.dom_ref);
     e.dom_ref = null;
 }
 
@@ -750,15 +751,42 @@ Board.prototype.collapse_column = function (column) {
     }
 }
 
-Board.prototype.show_text = function (text) {
+Board.prototype.show_text = function (text, hide_timeout) {
+    var t = document.getElementById('messagebox');
+    if (t) {
+        document.svgroot.removeChild(t);
+    }
+
+    function _msgbox_hide_cb() {
+        var mb = document.getElementById('messagebox');
+        if (mb) {
+            document.svgroot.removeChild(mb);
+        }
+    }
+
+    if (hide_timeout !== undefined) {
+        setTimeout(_msgbox_hide_cb, hide_timeout);
+    }
+
     var t = document.createElementNS(SVGNS, "text");
+
     t.textContent = text;
-    // XXX: center it
+    t.setAttribute('id', 'messagebox');
     t.setAttribute('x', 600);
     t.setAttribute('y', 350);
     t.setAttribute('font-size', 80);
     t.setAttribute('font-weight', 'bold');
     document.svgroot.appendChild(t);
+
+    // centering
+    var text_bbox = t.getBBox();
+    var board_bbox = this.visible_board.getBBox();
+    var bheight = (board_bbox.height / 2)+board_bbox.y;
+    var bwidth = (board_bbox.width / 2)+board_bbox.x;
+    var text_y = bheight;
+    var text_x = bwidth - (text_bbox.width/2);
+    t.setAttribute('x', text_x);
+    t.setAttribute('y', text_y);
     return t;
 }
 
@@ -778,12 +806,12 @@ Board.prototype.tile_selected = function (tile) {
             this.previous_selection = null;
             if (this.have_moves_left() === false) {
                 if (this.tiles_left === 0) {
-                    var t = this.show_text('You won!');
+                    this.show_text('You won!', 5000);
                 } else {
-                    var t = this.show_text('No moves left!');
+                    this.show_text('No moves left!', 5000);
                 }
 
-                setTimeout(function () { document.svgroot.removeChild(t); game.new_game(); }, 5000);
+                setTimeout(function () { game.new_game(); }, 5000);
                 return false;
             }
         } else {
@@ -916,12 +944,10 @@ Game.prototype.keyhandler = function (evt) {
         this.toggle_autoplay();
     } else if (key === game.KEY_GRAVITY || key === game.KEY_GREEN) {
         if (this.gravity === true) {
-            var t = this.b.show_text('Gravity off');
-            setTimeout(function () { document.svgroot.removeChild(t); }, 2000);
+            var t = this.b.show_text('Gravity off', 2000);
             this.gravity = false;
         } else {
-            var t = this.b.show_text('Gravity on');
-            setTimeout(function () { document.svgroot.removeChild(t); }, 2000);
+            var t = this.b.show_text('Gravity on', 2000);
             this.gravity = true;
         }
     } else {
