@@ -328,7 +328,7 @@ Board.prototype.clear_board = function() {
     for (var i=0; i<len; i++) {
         var e = this._tiles.pop()
         if (e.dom_ref !== null) {
-            this.dom_board.removeChild(e.dom_ref);
+            this.visible_board.removeChild(e.dom_ref);
         }
     }
     this.clean_fall_animation_cache();
