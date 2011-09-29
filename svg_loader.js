@@ -215,7 +215,9 @@ XHRExternalDirectSVG.prototype.xml_parse_cb = function(newSVGDoc, cb) {
     var wrapped_cb = function () { cb() };
 
     document.documentElement.appendChild(n);
-    setTimeout(wrapped_cb, 500);
+    // XXX: neither nice or reliable but I have not yet
+    // thought of a better method
+    setTimeout(wrapped_cb, 1000);
 }
 
 function XHRExternalCopySVG() {};

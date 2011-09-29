@@ -751,6 +751,17 @@ Board.prototype.collapse_column = function (column) {
     }
 }
 
+Board.prototype.get_initial_bbox = function () {
+    /* return size of the initial board area (excluding controls area)
+     * returned datatype is similar to what e.getBBox() would return
+     */
+    var x = this.PADDING_LEFT;
+    var y = this.PADDING_TOP;
+    var h = Tile.prototype.height * this.height;
+    var w = Tile.prototype.width  * this.width;
+    return {'x': x, 'y': y, 'height': h, 'width': w};
+}
+
 Board.prototype.show_text = function (text, hide_timeout) {
     var t = document.getElementById('messagebox');
     if (t) {
@@ -768,25 +779,41 @@ Board.prototype.show_text = function (text, hide_timeout) {
         setTimeout(_msgbox_hide_cb, hide_timeout);
     }
 
+    var g = document.createElementNS(SVGNS, "g");
+    g.setAttribute('id', 'messagebox');
+
     var t = document.createElementNS(SVGNS, "text");
 
     t.textContent = text;
-    t.setAttribute('id', 'messagebox');
     t.setAttribute('x', 600);
     t.setAttribute('y', 350);
     t.setAttribute('font-size', 80);
     t.setAttribute('font-weight', 'bold');
-    document.svgroot.appendChild(t);
+    g.appendChild(t);
+    document.svgroot.appendChild(g);
 
     // centering
     var text_bbox = t.getBBox();
-    var board_bbox = this.visible_board.getBBox();
+    var board_bbox = this.get_initial_bbox();
     var bheight = (board_bbox.height / 2)+board_bbox.y;
     var bwidth = (board_bbox.width / 2)+board_bbox.x;
     var text_y = bheight;
     var text_x = bwidth - (text_bbox.width/2);
     t.setAttribute('x', text_x);
     t.setAttribute('y', text_y);
+
+    var RECT_OFFSET = 50;
+    var r = document.createElementNS(SVGNS, 'rect');
+    var box_height = text_bbox.height+(RECT_OFFSET*2);
+    var box_width = text_bbox.width+(RECT_OFFSET*2);
+    r.setAttribute('width', box_width);
+    r.setAttribute('height', box_height);
+    r.setAttribute('x', text_x-RECT_OFFSET);
+    r.setAttribute('y', text_y-text_bbox.height);
+    r.setAttribute('fill', 'white');
+    r.setAttribute('style', 'stroke:black;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;opacity:0.8;');
+    g.insertBefore(r, t);
+
     return t;
 }
 
