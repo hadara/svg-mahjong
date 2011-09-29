@@ -832,13 +832,7 @@ Board.prototype.tile_selected = function (tile) {
             this.remove_tile(this.previous_selection);
             this.previous_selection = null;
             if (this.have_moves_left() === false) {
-                if (this.tiles_left === 0) {
-                    this.show_text('You won!', 5000);
-                } else {
-                    this.show_text('No moves left!', 5000);
-                }
-
-                setTimeout(function () { game.new_game(); }, 5000);
+                game.game_over();
                 return false;
             }
         } else {
@@ -873,8 +867,13 @@ Clock.prototype.reset = function () {
     this.start_time = new Date();
 }
 
-Clock.prototype.timer_callback = function () {
-    var timediff_ms = new Date() - this.start_time;
+Clock.prototype.get_time_spent = function () {
+    return new Date() - this.start_time;
+}
+
+Clock.prototype.time_to_str = function(timediff_ms) {
+    // XXX: is there something magic like __str__() in python
+    // that we should use instead?
     var seconds = parseInt(timediff_ms/1000, 10);
     var minutes = parseInt(seconds/60, 10);
     seconds = parseInt(seconds%60, 10)
@@ -885,13 +884,28 @@ Clock.prototype.timer_callback = function () {
         minutes = '0'+minutes;
     }
     var timestr = minutes+":"+seconds;
+    return timestr;
+}
+
+Clock.prototype.timer_callback = function () {
+    if (this._running === false) {
+        return;
+    }
+
+    var timestr = this.time_to_str(this.get_time_spent());
     this.clock_dom_ref.textContent = timestr;
     var self = this;
     setTimeout(function() { self.timer_callback() }, 1000);
 }
 
 Clock.prototype.start = function () {
+    this._running = true;
     this.timer_callback();
+}
+
+Clock.prototype.stop = function () {
+    this._running = false;
+    return this.get_time_spent();
 }
 
 function Highscores () {
@@ -1132,6 +1146,22 @@ Game.prototype.reset = function () {
     this.started_at = null;
     this.clock.reset();
     // clear board & DOM
+}
+
+Game.prototype.game_over = function () {
+    var NEW_GAME_TIMEOUT = 4000;
+
+    this.clock.stop();
+
+    if (this.b.tiles_left === 0) {
+        this.b.show_text('You won!', NEW_GAME_TIMEOUT);
+    } else {
+        this.b.show_text('No moves left!', NEW_GAME_TIMEOUT);
+    }
+
+    var self = this;
+    setTimeout(function () { self.new_game(); }, NEW_GAME_TIMEOUT);
+    return false;
 }
 
 Game.prototype.init = function () {
