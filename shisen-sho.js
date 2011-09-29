@@ -1136,7 +1136,7 @@ Game.prototype.reset = function () {
 
 Game.prototype.init = function () {
     var self = this;
-    if (navigator.userAgent.indexOf('Webkit') != -1) {
+    if (navigator.userAgent.indexOf('WebKit') != -1) {
         // there's some kind of a bug in webkit animation handling
         // haven't been able to hunt it down yet
         this.gravity = false;
