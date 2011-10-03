@@ -963,6 +963,17 @@ Game.prototype.KEY_YELLOW = 917506;
 Game.prototype.KEY_GREEN = 917505;
 Game.prototype.KEY_RED = 917504;
 
+Game.prototype.initial_keyhandler = function (evt) {
+    document.onclick = undefined;
+    // reset timer
+    this.hide_splash();
+    var self = this;
+    document.onkeydown = function (e) { return self.keyhandler(e) };
+    if (evt !== null) {
+        this.keyhandler(evt);
+    }
+}
+
 Game.prototype.keyhandler = function (evt) {
     var key = evt.which;
     if (key === game.KEY_HINT) {
@@ -1109,6 +1120,23 @@ Game.prototype.show_settings = function () {
     document.svgroot.appendChild(setting_dialog);
 }
 
+Game.prototype.show_splash = function (hide_timeout) {
+    var s = document.getElementById('splash');
+    var dialogs = document.getElementById('dialogs_container');
+    var x = window.innerWidth / 2;
+    var y = window.innerHeight / 2;
+    var dialog_bbox = s.getBBox();
+    x -= dialog_bbox.width/2;
+    s.setAttribute('visibility', 'visible');
+    s.setAttribute('transform', 'translate('+x+', '+y+')');
+    //setTimeout(function() { dialogs.removeChild(s) }, hide_timeout);
+}
+
+Game.prototype.hide_splash = function () {
+    var s = document.getElementById('splash');
+    s.setAttribute('visibility', 'hidden');
+}
+
 Game.prototype.board_init = function () {
     /* called after the tileset has been loaded
      */
@@ -1176,7 +1204,9 @@ Game.prototype.init = function () {
     this.clock.init();
 
     this.reset();
-    document.onkeydown = function (e) { return self.keyhandler(e) };
+    document.onkeydown = function (e) { return self.initial_keyhandler(e) };
+    document.onclick = function(e) { return self.initial_keyhandler(null) };
+    this.show_splash(2000);
 
     var t = document.getElementsByTagName("html");
     if (t && t.length > 0) {
