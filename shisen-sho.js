@@ -810,6 +810,8 @@ Board.prototype.show_text = function (text, hide_timeout) {
     r.setAttribute('height', box_height);
     r.setAttribute('x', text_x-RECT_OFFSET);
     r.setAttribute('y', text_y-text_bbox.height);
+    r.setAttribute('rx', 15);
+    r.setAttribute('ry', 15);
     r.setAttribute('fill', 'white');
     r.setAttribute('style', 'stroke:black;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;opacity:0.8;');
     g.insertBefore(r, t);
