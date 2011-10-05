@@ -26,10 +26,11 @@
       <g id="visible_board"></g>
       <g id="dialogs_container">
           <g transform="translate(100, 100)" id="splash" visibility="hidden">
-            <rect x="0" y="0" rx="18" ry="18" width="600" height="200" fill="white" style="stroke:black;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;"></rect>
-            <text x="120" y="60" font-size="48">SVG-Mahjong</text>
+            <rect x="0" y="0" rx="18" ry="18" opacity="0.9" width="600" height="200" fill="white" style="stroke:black;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;"></rect>
+            <text x="120" y="50" font-size="48">SVG-Mahjong</text>
             <a target="_blank" xlink:href="http://bitbucket.org/hadara/svg-mahjong/"><text x="10" y="120" font-size="24">http://bitbucket.org/hadara/svg-mahjong/</text></a>
-            <text x="10" y="160" font-size="24">License: GPLv3</text>
+            <text x="10" y="150" font-size="24">License: GPLv3</text>
+            <text x="100" y="190" font-weight="bold" font-size="24">Press any key to continue</text>
           </g>
       </g>
   </g>
